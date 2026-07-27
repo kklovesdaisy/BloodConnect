@@ -41,9 +41,7 @@ class DeleteBloodRequestUseCase
             return ['success' => false, 'error' => 'Could not delete the request.'];
         }
 
-        if ($isPending) {
-            $this->notifyDeletion($request);
-        }
+        $this->notifyDeletion($request);
 
         return ['success' => true];
     }
@@ -55,11 +53,22 @@ class DeleteBloodRequestUseCase
         $requestCode = (string)($request['request_code'] ?? 'Unknown');
         $patientName = (string)($request['patient_name'] ?? 'A patient');
         $bloodGroup = (string)($request['blood_group_needed'] ?? '');
+        $requestId = (int)($request['request_id'] ?? 0);
 
         $donorIds = [];
 
         if ($donorId > 0) {
             $donorIds[] = $donorId;
+        }
+
+        if ($requestId > 0) {
+            $assignedDonors = $this->bloodRequestRepo->getAssignedDonors($requestId);
+            foreach ($assignedDonors as $ad) {
+                $adId = (int)($ad['donor_id'] ?? 0);
+                if ($adId > 0) {
+                    $donorIds[] = $adId;
+                }
+            }
         }
 
         if ($bloodGroup !== '') {
@@ -75,7 +84,7 @@ class DeleteBloodRequestUseCase
             $this->notificationRepo->create(
                 $patientId,
                 'Request Deleted',
-                "Admin deleted your pending blood request {$requestCode}.",
+                "Admin deleted your blood request {$requestCode}.",
                 'REMINDER'
             );
         }
@@ -84,7 +93,7 @@ class DeleteBloodRequestUseCase
             $this->notificationRepo->create(
                 $notifyDonorId,
                 'Request Deleted',
-                "The pending blood request {$requestCode} for {$patientName} was removed by admin.",
+                "The blood request {$requestCode} for {$patientName} was removed by admin.",
                 'REMINDER'
             );
         }
@@ -95,7 +104,7 @@ class DeleteBloodRequestUseCase
                 $this->notificationRepo->create(
                     $adminId,
                     'Request Deleted',
-                    "Pending blood request {$requestCode} was deleted by admin.",
+                    "Blood request {$requestCode} was deleted by admin.",
                     'REMINDER'
                 );
             }

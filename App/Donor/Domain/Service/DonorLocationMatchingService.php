@@ -22,16 +22,25 @@ class DonorLocationMatchingService
             );
         }
 
-        if (empty($townshipMatches) && $stateRegion !== null && $stateRegion !== '') {
+        $townshipIds = array_column($townshipMatches, 'user_id');
+
+        if ($stateRegion !== null && $stateRegion !== '') {
             $regionMatches = $this->bloodRequestRepo->findDonorsByBloodGroupAndLocation(
                 $bloodGroup, null, $stateRegion
             );
+            $regionMatches = array_filter($regionMatches, fn($d) => !in_array((int)($d['user_id'] ?? 0), $townshipIds, true));
+            $regionMatches = array_values($regionMatches);
         }
 
-        if (empty($townshipMatches) && empty($regionMatches)) {
-            $allMatches = $this->bloodRequestRepo->findDonorsByBloodGroupAndLocation(
-                $bloodGroup, null, null
-            );
+        $regionIds = array_column($regionMatches, 'user_id');
+        $excludeIds = array_merge($townshipIds, $regionIds);
+
+        $allMatches = $this->bloodRequestRepo->findDonorsByBloodGroupAndLocation(
+            $bloodGroup, null, null
+        );
+        if (!empty($excludeIds)) {
+            $allMatches = array_filter($allMatches, fn($d) => !in_array((int)($d['user_id'] ?? 0), $excludeIds, true));
+            $allMatches = array_values($allMatches);
         }
 
         return [

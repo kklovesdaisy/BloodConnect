@@ -188,7 +188,7 @@ if (!function_exists('getAdminBloodGroupStyle')) {
                         <p class="mt-2 text-sm font-medium text-slate-500">This request was cancelled by the patient, so donor matching is no longer required.</p>
                     </div>
                 <?php elseif ($isDeclined): ?>
-                    <div class="rounded-2xl border border-rose-200 bg-rose-50/70 p-6 text-center">
+                    <div class="rounded-2xl border border-rose-200 bg-rose-50/70 p-6 text-center mb-8">
                         <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-rose-100 text-rose-500 flex items-center justify-center">
                             <i class="fa-solid fa-circle-xmark text-xl"></i>
                         </div>
@@ -201,6 +201,194 @@ if (!function_exists('getAdminBloodGroupStyle')) {
                             </button>
                         </form>
                     </div>
+
+                    <?php if (!empty($assignedDonors)): ?>
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                            <div>
+                                <h3 class="text-lg font-black text-slate-900 tracking-tight">Assigned Donors</h3>
+                                <p class="text-xs text-slate-400 font-medium mt-0.5">Donor responses to this request.</p>
+                            </div>
+                            <span class="inline-block px-2.5 py-1 text-[9px] font-extrabold rounded-lg uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200/60">
+                                <?= count($assignedDonors) ?> Total
+                            </span>
+                        </div>
+                        <?php
+                        $responseLabels = [
+                            11 => ['label' => 'Pending', 'class' => 'text-amber-600'],
+                            12 => ['label' => 'Accepted', 'class' => 'text-emerald-600'],
+                            13 => ['label' => 'Declined', 'class' => 'text-rose-600'],
+                        ];
+                        $responseBorders = [
+                            11 => 'border-amber-200 bg-amber-50/30',
+                            12 => 'border-emerald-200 bg-emerald-50/30',
+                            13 => 'border-rose-200 bg-rose-50/30',
+                        ];
+                        ?>
+                        <?php foreach ($assignedDonors as $ad):
+                            $rsid = (int)($ad['response_status_id'] ?? 11);
+                            $rlabel = $responseLabels[$rsid] ?? $responseLabels[11];
+                            $rborder = $responseBorders[$rsid] ?? $responseBorders[11];
+                        ?>
+                            <div class="rounded-2xl border p-4 space-y-2 <?= $rborder ?>">
+                                <div class="flex items-center justify-between gap-3">
+                                    <h4 class="text-sm font-black text-slate-900"><?= htmlspecialchars((string)($ad['username'] ?? 'Donor')) ?></h4>
+                                    <span class="text-[9px] font-bold uppercase tracking-wider <?= $rlabel['class'] ?>"><?= $rlabel['label'] ?></span>
+                                </div>
+                                <div class="flex gap-3 text-xs text-slate-600">
+                                    <span class="font-mono font-bold"><?= htmlspecialchars((string)($ad['blood_group'] ?? '-')) ?></span>
+                                    <span>&middot;</span>
+                                    <span><?= htmlspecialchars((string)($ad['phone'] ?? '-')) ?></span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if ($matchingTier !== 'none'): ?>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                            <div>
+                                <h3 class="text-lg font-black text-slate-900 tracking-tight">Matching Donors</h3>
+                                <p class="text-xs text-slate-400 font-medium mt-0.5">Auto-filtered by location proximity.</p>
+                            </div>
+                            <span class="inline-block px-2.5 py-1 text-[9px] font-extrabold rounded-lg uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200/60">
+                                <?= count($donors) ?> Matches
+                            </span>
+                        </div>
+
+                        <?php
+                        $tierLabels = [
+                            'township' => ['label' => 'Same Township', 'class' => 'bg-emerald-50 text-emerald-600 border-emerald-200'],
+                            'region' => ['label' => 'Same State/Region', 'class' => 'bg-blue-50 text-blue-600 border-blue-200'],
+                            'all' => ['label' => 'All Donors (broadcast)', 'class' => 'bg-amber-50 text-amber-600 border-amber-200'],
+                        ];
+                        $tierInfo = $tierLabels[$matchingTier] ?? ['label' => 'Unknown', 'class' => 'bg-slate-50 text-slate-600 border-slate-200'];
+                        ?>
+
+                        <div class="rounded-xl border p-3 <?= $tierInfo['class'] ?> flex items-center justify-between">
+                            <span class="text-xs font-extrabold uppercase tracking-wider"><?= $tierInfo['label'] ?></span>
+                            <span class="text-[10px] font-bold"><?= count($donors) ?> donor<?= count($donors) !== 1 ? 's' : '' ?></span>
+                        </div>
+
+                        <form action="/BloodConnect/public/admin/blood-request/assign-donors" method="POST" class="space-y-4">
+                            <input type="hidden" name="request_id" value="<?= (int)($request['request_id'] ?? 0) ?>">
+
+                             <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                                <?php
+                                $allReserved = !empty($donors);
+                                foreach ($donors as $donor):
+                                    $did = (int)($donor['user_id'] ?? 0);
+                                    $dloc = array_filter([$donor['township'] ?? '', $donor['state_region'] ?? '']);
+                                    $reserved = $donor['reserved_for'] ?? null;
+                                    if ($reserved === null) {
+                                        $allReserved = false;
+                                    }
+                                ?>
+                                    <?php $alreadyResponded = isset($donorResponseMap[$did]) && $donorResponseMap[$did] !== 11; ?>
+                                    <label class="flex items-start gap-3 p-3 rounded-xl border transition-all <?= ($reserved !== null || $alreadyResponded) ? 'border-slate-200 bg-slate-50/40 opacity-70 cursor-not-allowed' : 'border-slate-200/70 bg-white hover:bg-slate-50/50 cursor-pointer has-[:checked]:border-rose-300 has-[:checked]:bg-rose-50/30' ?>">
+                                        <input type="checkbox" name="donor_ids[]" value="<?= $did ?>" <?= ($reserved !== null || $alreadyResponded) ? 'disabled' : '' ?>
+                                            class="mt-0.5 w-4 h-4 rounded accent-[#ce24224]">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-sm font-bold text-slate-800 truncate"><?= htmlspecialchars((string)($donor['username'] ?? 'Donor')) ?></span>
+                                                <span class="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border <?= getAdminBloodGroupStyle($donor['blood_group'] ?? '') ?>">
+                                                    <?= htmlspecialchars((string)($donor['blood_group'] ?? '-')) ?>
+                                                </span>
+                                            </div>
+                                            <div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[11px] text-slate-500 font-medium">
+                                                <span><?= htmlspecialchars((string)($donor['phone'] ?? '-')) ?></span>
+                                                <?php if (!empty($dloc)): ?>
+                                                    <span>&middot;</span>
+                                                    <span class="truncate"><?= htmlspecialchars(implode(', ', $dloc)) ?></span>
+                                                <?php endif; ?>
+                                                <?php
+                                                $tierBadge = [
+                                                    'township' => ['label' => 'Same Township', 'class' => 'bg-emerald-100 text-emerald-700 border-emerald-200'],
+                                                    'region'   => ['label' => 'Same Region', 'class' => 'bg-blue-100 text-blue-700 border-blue-200'],
+                                                    'all'      => ['label' => 'Other Region', 'class' => 'bg-amber-100 text-amber-700 border-amber-200'],
+                                                ];
+                                                $dt = $donor['match_tier'] ?? 'all';
+                                                $dbadge = $tierBadge[$dt] ?? $tierBadge['all'];
+                                                ?>
+                                                <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider <?= $dbadge['class'] ?> border rounded px-1.5 py-0.5">
+                                                    <?= htmlspecialchars($dbadge['label']) ?>
+                                                </span>
+                                                <?php if (isset($donorResponseMap[$did]) && $donorResponseMap[$did] === 13): ?>
+                                                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-rose-700 bg-rose-100 border border-rose-200 rounded px-1.5 py-0.5">
+                                                        Declined
+                                                    </span>
+                                                <?php elseif (isset($donorResponseMap[$did]) && $donorResponseMap[$did] === 12): ?>
+                                                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 border border-emerald-200 rounded px-1.5 py-0.5">
+                                                        Accepted
+                                                    </span>
+                                                <?php endif; ?>
+                                                <?php if ($reserved !== null): ?>
+                                                    <span class="inline-flex items-center gap-1 mt-1 text-[10px] font-extrabold uppercase tracking-wider text-amber-700 bg-amber-100 border border-amber-200 rounded px-1.5 py-0.5">
+                                                        Reserved &rarr; <?= htmlspecialchars($reserved['request_code']) ?> (<?= htmlspecialchars($reserved['urgency']) ?>)
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <?php if ($allReserved): ?>
+                                <div class="rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-[11px] font-semibold text-amber-700">
+                                    All matching donors are reserved for a higher-priority request. Assign donors to the top-priority request first.
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if (!empty($donors)): ?>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" onclick="toggleAllCheckboxes()" class="text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors">
+                                        Toggle All
+                                    </button>
+                                    <span class="text-slate-300">|</span>
+                                    <span id="selectedCount" class="text-xs font-semibold text-slate-400">0 selected</span>
+                                </div>
+
+                                <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#ce2424] px-4 py-3 text-xs font-bold text-white hover:bg-[#a61c1c] transition-all active:scale-95 shadow-md shadow-red-600/10">
+                                    <i class="fa-solid fa-truck-medical"></i> Assign Selected Donors
+                                </button>
+
+                                <button type="submit" formaction="/BloodConnect/public/admin/blood-request/notify-donors" class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-[#ce2424] bg-white px-4 py-3 text-xs font-bold text-[#ce2424] hover:bg-rose-50 transition-all active:scale-95">
+                                    <i class="fa-solid fa-envelope"></i> Send Email Alert to Selected Donors
+                                </button>
+                            <?php endif; ?>
+                        </form>
+
+                        <script>
+                            function toggleAllCheckboxes() {
+                                const checkboxes = document.querySelectorAll('input[name="donor_ids[]"]');
+                                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                                checkboxes.forEach(cb => cb.checked = !allChecked);
+                                updateSelectedCount();
+                            }
+
+                            function updateSelectedCount() {
+                                const checked = document.querySelectorAll('input[name="donor_ids[]"]:checked').length;
+                                const el = document.getElementById('selectedCount');
+                                if (el) el.textContent = checked + ' selected';
+                            }
+
+                            document.addEventListener('change', function(e) {
+                                if (e.target.matches('input[name="donor_ids[]"]')) {
+                                    updateSelectedCount();
+                                }
+                            });
+
+                            document.addEventListener('DOMContentLoaded', updateSelectedCount);
+                        </script>
+                    </div>
+                    <?php else: ?>
+                        <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center text-xs font-medium text-slate-400">
+                            <i class="fa-solid fa-users-slash text-xl block text-slate-300 mb-2"></i>
+                            No active verified network donors match this blood group registry.
+                        </div>
+                    <?php endif; ?>
+
                 <?php elseif ($isAccepted && $acceptedDonor): ?>
                     <div class="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 space-y-4">
                         <div class="flex items-center justify-between gap-3">
