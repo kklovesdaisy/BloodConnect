@@ -30,6 +30,8 @@ class RoleRepository
         LEFT JOIN user_type_permissions utp
             ON ut.id = utp.user_type_id
 
+        WHERE ut.id <> 1
+
         GROUP BY ut.id, ut.name
 
         ORDER BY ut.id

@@ -6,6 +6,8 @@ use App\BloodRequest\Domain\Repository\BloodRequestRepositoryInterface;
 use App\Notification\Domain\Repository\NotificationRepositoryInterface;
 use App\User\Domain\Repository\UserRepositoryInterface;
 use App\Shared\Infrastructure\Activity\ActivityLogger;
+use App\Shared\Infrastructure\Mail\EmailService;
+use App\Shared\Infrastructure\Persistence\MasterDataRepository;
 
 class DeclineBloodRequestUseCase
 {
@@ -13,7 +15,9 @@ class DeclineBloodRequestUseCase
         private BloodRequestRepositoryInterface $bloodRequestRepo,
         private NotificationRepositoryInterface $notificationRepo,
         private UserRepositoryInterface $userRepo,
-        private ActivityLogger $activityLogger
+        private ActivityLogger $activityLogger,
+        private EmailService $emailService,
+        private MasterDataRepository $masterRepo
     ) {}
 
     public function execute(int $requestId, int $donorId): array
@@ -63,6 +67,29 @@ class DeclineBloodRequestUseCase
             "You declined blood request {$requestCode}.",
             'REQUEST'
         );
+
+        $declinedData = [
+            'patient_name'   => (string)($request['patient_name'] ?? 'A patient'),
+            'blood_group'    => $this->masterRepo->getLabel('BLOOD_GROUP', (string)($request['blood_group_needed'] ?? '')) ?? ($request['blood_group_needed'] ?? ''),
+            'hospital_name'  => (string)($request['hospital_name'] ?? 'the hospital'),
+            'request_code'   => $requestCode,
+        ];
+
+        if (!empty($request['patient_id'])) {
+            $patient = $this->userRepo->findById((int)$request['patient_id']);
+            if ($patient && !empty($patient['email'])) {
+                $this->emailService->sendDonorDeclinedToPatient($patient['email'], $declinedData);
+            }
+        }
+
+        $adminEmails = $this->userRepo->getAdminEmails();
+        foreach ($adminEmails as $admin) {
+            if (!empty($admin['email'])) {
+                $this->emailService->sendDonorDeclinedToAdmin($admin['email'], [
+                    'donor_name' => $donorName,
+                ] + $declinedData);
+            }
+        }
 
         return ['success' => true];
     }

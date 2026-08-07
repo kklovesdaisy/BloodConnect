@@ -4,10 +4,14 @@ namespace App\Admin\Application\UseCase;
 
 use App\BloodRequest\Domain\Repository\BloodRequestRepositoryInterface;
 use App\BloodRequest\Domain\Service\RequestPrioritizationService;
+use App\BloodStock\Domain\Entity\BloodStock;
+use App\BloodStock\Domain\Repository\BloodStockRepositoryInterface;
 use App\Donation\Domain\Repository\DonationRepositoryInterface;
 use App\Notification\Domain\Repository\NotificationRepositoryInterface;
 use App\User\Domain\Repository\UserRepositoryInterface;
+use App\Shared\Infrastructure\Database\Database;
 use App\Shared\Infrastructure\Persistence\MasterDataRepository;
+use App\Shared\Infrastructure\Mail\EmailService;
 
 class ConfirmDonationUseCase
 {
@@ -17,7 +21,9 @@ class ConfirmDonationUseCase
         private NotificationRepositoryInterface $notificationRepo,
         private UserRepositoryInterface $userRepo,
         private MasterDataRepository $masterRepo,
-        private RequestPrioritizationService $prioritizationService
+        private RequestPrioritizationService $prioritizationService,
+        private EmailService $emailService,
+        private BloodStockRepositoryInterface $bloodStockRepo
     ) {}
 
     /**
@@ -27,6 +33,10 @@ class ConfirmDonationUseCase
      * - Request must exist
      * - Request must have a donor assigned
      * - Donation record status is synced
+     * - Stock accounting runs inside a transaction: the donated bag is added
+     *   to the donor's blood group, then one bag of the requested group is
+     *   issued to the patient. If the requested group lacks stock the request
+     *   cannot be completed and the whole change is rolled back.
      * - Admins are notified
      */
     public function complete(int $requestId): array
@@ -39,17 +49,47 @@ class ConfirmDonationUseCase
 
         $completedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 11;
 
+        // Idempotency guard: a re-complete must not run stock accounting twice.
+        if ((int)($request['status'] ?? 0) === $completedStatus) {
+            return ['success' => true];
+        }
+
         // Business rule: request must have a donor assigned
         $donorId = (int)($request['donor_id'] ?? 0);
         if ($donorId <= 0) {
             return ['success' => false, 'error' => 'Cannot complete a request with no donor assigned.'];
         }
 
-        // Update blood request status
-        $this->bloodRequestRepo->completeRequest($requestId, (int)$completedStatus);
+        $neededGroup = BloodStock::normalize((string)($request['blood_group_needed'] ?? ''));
+        $donor = $this->userRepo->findById($donorId);
+        $donorGroup = BloodStock::normalize((string)($donor['blood_group'] ?? ''));
 
-        // Sync donation record
-        $this->donationRepo->updateStatusByRequestId($requestId, (int)$completedStatus);
+        $db = Database::getConnection();
+        $db->beginTransaction();
+
+        try {
+            // Stock in: the donated bag enters inventory under the donor's group.
+            if ($donorGroup !== '') {
+                $this->bloodStockRepo->increase($donorGroup, 1);
+            }
+
+            // Stock out: one bag of the needed group is issued to the patient.
+            if ($neededGroup === '' || !$this->bloodStockRepo->decreaseIfAvailable($neededGroup, 1)) {
+                $db->rollBack();
+                return ['success' => false, 'error' => 'Insufficient blood stock.'];
+            }
+
+            // Update blood request status
+            $this->bloodRequestRepo->completeRequest($requestId, (int)$completedStatus);
+
+            // Sync donation record
+            $this->donationRepo->updateStatusByRequestId($requestId, (int)$completedStatus);
+
+            $db->commit();
+        } catch (\Throwable $e) {
+            $db->rollBack();
+            return ['success' => false, 'error' => 'Failed to complete the request. Please try again.'];
+        }
 
         // Notify all admins
         $admins = $this->notificationRepo->getAdmins();
@@ -63,6 +103,46 @@ class ConfirmDonationUseCase
                 ),
                 'REQUEST'
             );
+        }
+
+        $completionData = [
+            'patient_name'   => (string)($request['patient_name'] ?? 'A patient'),
+            'blood_group'    => $this->masterRepo->getLabel('BLOOD_GROUP', (string)($request['blood_group_needed'] ?? '')) ?? ($request['blood_group_needed'] ?? ''),
+            'hospital_name'  => (string)($request['hospital_name'] ?? 'the hospital'),
+            'request_code'   => (string)($request['request_code'] ?? ''),
+        ];
+
+        $patient = $this->userRepo->findById((int)($request['patient_id'] ?? 0));
+        if ($patient) {
+            $this->notificationRepo->create(
+                (int)$patient['user_id'],
+                'Donation Completed',
+                sprintf(
+                    'The blood donation for your request %s has been completed successfully.',
+                    $request['request_code']
+                ),
+                'REQUEST'
+            );
+
+            if (!empty($patient['email'])) {
+                $this->emailService->sendDonationCompletedToPatient($patient['email'], $completionData);
+            }
+        }
+
+        $donor = $this->userRepo->findById($donorId);
+        if ($donor) {
+            $this->notificationRepo->create(
+                (int)$donor['user_id'],
+                'Donation Completed',
+                'Your blood donation process has been completed successfully. Thank you for being a lifesaver.',
+                'REQUEST'
+            );
+
+            if (!empty($donor['email'])) {
+                $this->emailService->sendDonationCompletedToDonor($donor['email'], [
+                    'donor_name' => (string)($donor['username'] ?? 'Donor'),
+                ] + $completionData);
+            }
         }
 
         return ['success' => true];
@@ -181,6 +261,24 @@ class ConfirmDonationUseCase
                 ),
                 'REQUEST'
             );
+        }
+
+        $assignmentData = [
+            'patient_name'   => (string)($request['patient_name'] ?? 'A patient'),
+            'blood_group'    => $this->masterRepo->getLabel('BLOOD_GROUP', (string)($request['blood_group_needed'] ?? '')) ?? ($request['blood_group_needed'] ?? ''),
+            'hospital_name'  => (string)($request['hospital_name'] ?? 'the hospital'),
+            'urgency'        => (string)($request['urgency'] ?? 'ROUTINE'),
+            'request_code'   => (string)($request['request_code'] ?? ''),
+        ];
+
+        if (!empty($donor['email'])) {
+            $this->emailService->sendDonorAssignedToDonor($donor['email'], [
+                'donor_name' => (string)($donor['username'] ?? 'Donor'),
+            ] + $assignmentData);
+        }
+
+        if ($patient && !empty($patient['email'])) {
+            $this->emailService->sendDonorAssignedToPatient($patient['email'], $assignmentData);
         }
 
         return ['success' => true];

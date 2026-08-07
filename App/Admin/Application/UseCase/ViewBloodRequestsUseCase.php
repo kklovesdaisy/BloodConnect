@@ -65,6 +65,18 @@ class ViewBloodRequestsUseCase
             || (strtolower((string)($request['status_name'] ?? '')) === 'declined');
     }
 
+    public function isRequestExpired(array $request): bool
+    {
+        $expiredStatusId = $this->getExpiredStatusId();
+        return ((int)($request['status'] ?? 0) === $expiredStatusId)
+            || (strtolower((string)($request['status_name'] ?? '')) === 'expired');
+    }
+
+    public function getExpiredStatusId(): int
+    {
+        return $this->masterRepo->getId('REQUEST_STATUS', 'EXPIRED') ?? 48;
+    }
+
     public function getDeclinedStatusId(): int
     {
         return $this->masterRepo->getId('REQUEST_STATUS', 'DECLINED') ?? 47;

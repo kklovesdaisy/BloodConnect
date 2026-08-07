@@ -8,6 +8,7 @@ $assignedDonors = $assignedDonors ?? [];
 $matchingTier = $matchingTier ?? 'none';
 $competingRequests = $competingRequests ?? [];
 $isCancelledRequest = $isCancelledRequest ?? false;
+$isExpired = $isExpired ?? false;
 $hasAssignedDonor = !empty($request['donor_id']) || !empty($assignedDonor);
 $isPendingAssignment = $hasAssignedDonor && !$isAccepted;
 
@@ -179,7 +180,15 @@ if (!function_exists('getAdminBloodGroupStyle')) {
             </div>
 
             <div class="bg-white border border-slate-200/70 rounded-3xl p-6 shadow-2xs space-y-6 opacity-0 animate-fade-in-up" style="animation-delay: 0.1s;">
-                <?php if ($isCancelledRequest): ?>
+                <?php if ($isExpired): ?>
+                    <div class="rounded-2xl border border-slate-300 bg-slate-100/70 p-6 text-center">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-slate-200 text-slate-500 flex items-center justify-center">
+                            <i class="fa-solid fa-hourglass-end text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-black text-slate-900 tracking-tight">Request Expired</h3>
+                        <p class="mt-2 text-sm font-medium text-slate-500">This request expired before a donor accepted it. Donor matching is disabled for expired requests.</p>
+                    </div>
+                <?php elseif ($isCancelledRequest): ?>
                     <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-6 text-center">
                         <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
                             <i class="fa-solid fa-ban text-xl"></i>

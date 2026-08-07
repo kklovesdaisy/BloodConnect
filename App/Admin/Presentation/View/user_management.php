@@ -11,7 +11,19 @@ $db = Database::getConnection(); ?>
 </style>
 <?php
 
+use App\Shared\Helpers\AdminFilters;
+
 $filter = $_GET['filter'] ?? '';
+
+/*
+|--------------------------------------------------------------------------
+| SEARCH & FILTER PARAMETERS
+|--------------------------------------------------------------------------
+*/
+$q = AdminFilters::strParam('q');
+$userType = AdminFilters::strParam('user_type');
+$bloodGroup = AdminFilters::strParam('blood_group');
+$statusFilter = AdminFilters::strParam('status');
 
 /*
 |--------------------------------------------------------------------------
@@ -19,9 +31,52 @@ $filter = $_GET['filter'] ?? '';
 |--------------------------------------------------------------------------
 */
 $where = 'WHERE u.deleted_at IS NULL';
-if ($filter === 'patients') {
-    $where .= ' AND u.user_type_id = 3';
+$params = [];
+
+if ($filter === 'patients' && $userType === '') {
+    $userType = '3';
 }
+if ($userType !== '') {
+    $where .= ' AND u.user_type_id = ?';
+    $params[] = (int)$userType;
+}
+if ($statusFilter !== '') {
+    $where .= ' AND u.is_active = ?';
+    $params[] = $statusFilter === '1' ? 1 : 0;
+}
+if ($bloodGroup !== '') {
+    $where .= ' AND (u.blood_group = ? OR md.label = ?)';
+    $params[] = $bloodGroup;
+    $params[] = $bloodGroup;
+}
+if ($q !== '') {
+    $where .= ' AND (
+        u.username LIKE ? OR u.email LIKE ? OR u.phone LIKE ?
+        OR u.blood_group LIKE ? OR md.label LIKE ? OR ut.name LIKE ?
+    )';
+    $like = '%' . $q . '%';
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+}
+
+$stmt = $db->prepare("
+    SELECT COUNT(*)
+    FROM users u
+    LEFT JOIN user_types ut
+        ON u.user_type_id = ut.id
+    LEFT JOIN master_data md
+        ON md.category = 'BLOOD_GROUP'
+        AND md.code = u.blood_group
+    {$where}
+");
+$stmt->execute($params);
+$totalUsers = (int)$stmt->fetchColumn();
+
+$adminPagination = AdminFilters::paginate($totalUsers, 20);
 
 $stmt = $db->prepare("
     SELECT
@@ -41,9 +96,9 @@ $stmt = $db->prepare("
         AND md.code = u.blood_group
     {$where}
     ORDER BY u.user_id DESC
+    LIMIT {$adminPagination['perPage']} OFFSET {$adminPagination['offset']}
 ");
-
-$stmt->execute();
+$stmt->execute($params);
 $users = $stmt->fetchAll();
 
 $pageTitle = match ($filter) {
@@ -114,12 +169,41 @@ $pageTitle = match ($filter) {
             <div class="flex flex-col">
                 <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Active Pool</span>
                 <span class="text-lg font-extrabold tracking-tight mt-0.5 mono">
-                    <?= sprintf('%02d', count($users)) ?> <span class="text-xs text-slate-500 font-normal">nodes</span>
+                    <?= sprintf('%02d', $adminPagination['total']) ?> <span class="text-xs text-slate-500 font-normal">nodes</span>
                 </span>
             </div>
             <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)] animate-pulse"></div>
         </div>
     </div>
+
+    <?php
+    $adminFilterConfig = [
+        'action' => '/BloodConnect/public/admin/user-management',
+        'search_name' => 'q',
+        'search_placeholder' => 'Search name, email, phone or blood group…',
+        'fields' => [
+            [
+                'type' => 'select',
+                'name' => 'user_type',
+                'label' => 'User Type',
+                'options' => ['1' => 'Admin', '2' => 'Donor', '3' => 'Patient'],
+            ],
+            [
+                'type' => 'select',
+                'name' => 'status',
+                'label' => 'Status',
+                'options' => ['1' => 'Active', '0' => 'Inactive'],
+            ],
+            [
+                'type' => 'select',
+                'name' => 'blood_group',
+                'label' => 'Blood Group',
+                'options' => AdminFilters::bloodGroups($db),
+            ],
+        ],
+    ];
+    require __DIR__ . '/../../../Shared/Presentation/View/partials/admin_filter_bar.php';
+    ?>
 
     <!-- MAIN INTERACTIVE DATA SHEET BLOCK -->
     <div class="space-y-3">
@@ -265,6 +349,8 @@ $pageTitle = match ($filter) {
             <?php endforeach; ?>
         </div>
     </div>
+
+    <?php require __DIR__ . '/../../../Shared/Presentation/View/partials/admin_pagination.php'; ?>
 </div>
 
 <!-- PAGE STRUCTURAL MOUNT ANIMATION SCRIPT -->

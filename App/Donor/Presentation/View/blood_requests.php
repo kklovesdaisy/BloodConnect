@@ -25,6 +25,8 @@ function getFulfillmentStyle($status, $statusCode = 0)
         return 'bg-rose-50 text-rose-700 border-rose-200/50';
     } elseif (str_contains($status, 'completed') || (int)$statusCode === 9) {
         return 'bg-blue-50 text-blue-700 border-blue-200/50';
+    } elseif (str_contains($status, 'expired') || (int)$statusCode === 48) {
+        return 'bg-slate-100 text-slate-500 border-slate-200/50';
     }
     return 'bg-amber-50 text-amber-700 border-amber-200/50';
 }
@@ -155,10 +157,18 @@ $activeCount = count($requests);
                                 </span>
                             </div>
 
-                            <div class="col-span-2 flex justify-start pl-2">
+                            <div class="col-span-2 flex flex-col items-start gap-1 pl-2">
                                 <span class="inline-block px-3 py-1 text-[9px] font-extrabold rounded-lg uppercase tracking-widest border shadow-3xs <?= getFulfillmentStyle($statusName, $statusCode) ?>">
                                     <?= htmlspecialchars(ucwords((string)$statusName)) ?>
                                 </span>
+                                <?php if ((int)$statusCode === 7 && !empty($request['expiry_date'])):
+                                    $donExpiryDiff = strtotime($request['expiry_date']) - time();
+                                    if ($donExpiryDiff > 0):
+                                        $donDays = floor($donExpiryDiff / 86400);
+                                        $donHours = floor(($donExpiryDiff % 86400) / 3600);
+                                ?>
+                                    <span class="text-[10px] font-medium text-amber-500"><i class="fa-regular fa-clock"></i> Expires in <?= $donDays > 0 ? $donDays . 'd ' . $donHours . 'h' : $donHours . 'h' ?></span>
+                                <?php endif; endif; ?>
                             </div>
 
                             <div class="col-span-1 flex justify-center">
@@ -204,6 +214,14 @@ $activeCount = count($requests);
                                     <h4 class="font-extrabold text-slate-900 text-base tracking-tight truncate leading-tight"><?= htmlspecialchars($request['hospital_name'] ?? '-') ?></h4>
                                     <p class="text-xs font-medium text-slate-600 truncate">Patient: <?= htmlspecialchars($request['patient_name'] ?? 'Unknown') ?></p>
                                     <p class="text-xs text-slate-400 font-bold pt-1"><i class="fa-solid fa-droplet text-red-500 mr-1"></i><?= (int)($request['unit'] ?? 0) ?> Units Required</p>
+                                    <?php if ((int)$statusCode === 7 && !empty($request['expiry_date'])):
+                                        $donMobileExpiry = strtotime($request['expiry_date']) - time();
+                                        if ($donMobileExpiry > 0):
+                                            $donMobileDays = floor($donMobileExpiry / 86400);
+                                            $donMobileHours = floor(($donMobileExpiry % 86400) / 3600);
+                                    ?>
+                                        <p class="text-xs text-amber-500 font-semibold"><i class="fa-regular fa-clock mr-1"></i>Expires in <?= $donMobileDays > 0 ? $donMobileDays . 'd ' . $donMobileHours . 'h' : $donMobileHours . 'h' ?></p>
+                                    <?php endif; endif; ?>
                                 </div>
                                 <div class="w-11 h-11 rounded-xl border font-black text-sm flex items-center justify-center font-mono shrink-0 <?= getBloodGroupStyle($request['blood_group_needed'] ?? '-') ?>">
                                     <?= htmlspecialchars($request['blood_group_needed'] ?? '-') ?>

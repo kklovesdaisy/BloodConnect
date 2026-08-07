@@ -54,7 +54,7 @@ $user = \App\Shared\Helpers\Session::get('user', []);
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
                         </svg>
-                        <input type="number" name="unit" min="1" max="10" required placeholder="2"
+                        <input type="number" name="unit" min="1" max="2" required placeholder="2"
                             class="w-full h-9 bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 text-sm text-slate-800 placeholder-slate-400 font-medium outline-none transition-all duration-200 focus:bg-white focus:border-rose-400 focus:ring-2 focus:ring-rose-500/10">
                     </div>
                 </div>

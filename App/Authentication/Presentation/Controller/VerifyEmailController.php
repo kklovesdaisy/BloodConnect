@@ -111,7 +111,7 @@ class VerifyEmailController
         $pending['expires_at'] = $expires;
         Session::set('pending_registration', $pending);
 
-        $this->emailService->sendOtp($email, $code);
+        $this->emailService->sendOtp($email, $code, $pending['username'] ?? null);
 
         $_SESSION['success'] = "New code sent!";
         $this->redirect('/verify-email');

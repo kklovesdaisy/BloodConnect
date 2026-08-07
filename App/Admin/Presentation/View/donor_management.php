@@ -12,8 +12,21 @@ $db = Database::getConnection(); ?>
 </style>
 <?php
 
+use App\Shared\Helpers\AdminFilters;
+
 $filter = $_GET['filter'] ?? 'donors';
 $highlightId = isset($_GET['highlight']) ? (int)$_GET['highlight'] : 0;
+
+/*
+|--------------------------------------------------------------------------
+| SEARCH & FILTER PARAMETERS
+|--------------------------------------------------------------------------
+*/
+$q = AdminFilters::strParam('q');
+$availability = AdminFilters::strParam('availability');
+$bloodGroup = AdminFilters::strParam('blood_group');
+$statusFilter = AdminFilters::strParam('status');
+$location = AdminFilters::strParam('location');
 
 /*
 |--------------------------------------------------------------------------
@@ -21,9 +34,54 @@ $highlightId = isset($_GET['highlight']) ? (int)$_GET['highlight'] : 0;
 |--------------------------------------------------------------------------
 */
 $where = 'u.user_type_id = 2 AND u.deleted_at IS NULL';
-if ($filter === 'available') {
-    $where .= ' AND u.available = 1';
+$params = [];
+
+if ($filter === 'available' && $availability === '') {
+    $availability = 'available';
 }
+if ($availability === 'available') {
+    $where .= ' AND u.available = 1 AND u.is_active = 1';
+} elseif ($availability === 'unavailable') {
+    $where .= ' AND u.available = 0 AND u.is_active = 1';
+} elseif ($availability === 'inactive') {
+    $where .= ' AND u.is_active != 1';
+}
+if ($statusFilter !== '') {
+    $where .= ' AND u.is_active = ?';
+    $params[] = $statusFilter === '1' ? 1 : 0;
+}
+if ($location !== '') {
+    $where .= ' AND d.state_region = ?';
+    $params[] = $location;
+}
+if ($bloodGroup !== '') {
+    $where .= ' AND (u.blood_group = ? OR md.label = ?)';
+    $params[] = $bloodGroup;
+    $params[] = $bloodGroup;
+}
+if ($q !== '') {
+    $where .= ' AND (u.username LIKE ? OR u.email LIKE ? OR u.phone LIKE ? OR u.blood_group LIKE ? OR md.label LIKE ?)';
+    $like = '%' . $q . '%';
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+}
+
+$stmt = $db->prepare("
+    SELECT COUNT(*)
+    FROM users u
+    LEFT JOIN donors d ON d.user_id = u.user_id
+    LEFT JOIN master_data md
+        ON md.category = 'BLOOD_GROUP'
+        AND md.code = u.blood_group
+    WHERE {$where}
+");
+$stmt->execute($params);
+$totalDonors = (int)$stmt->fetchColumn();
+
+$adminPagination = AdminFilters::paginate($totalDonors, 20);
 
 $stmt = $db->prepare("
     SELECT 
@@ -44,11 +102,15 @@ $stmt = $db->prepare("
         END AS availability_status
     FROM users u
     LEFT JOIN donors d ON d.user_id = u.user_id
+    LEFT JOIN master_data md
+        ON md.category = 'BLOOD_GROUP'
+        AND md.code = u.blood_group
     WHERE {$where}
     ORDER BY u.user_id DESC
+    LIMIT {$adminPagination['perPage']} OFFSET {$adminPagination['offset']}
 ");
 
-$stmt->execute();
+$stmt->execute($params);
 $donors = $stmt->fetchAll();
 
 // Override availability status with eligibility check (age 18-65, weight >= 50kg)
@@ -129,12 +191,58 @@ $pageTitle = match ($filter) {
             <div class="flex flex-col">
                 <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Active Pool</span>
                 <span class="text-lg font-extrabold tracking-tight mt-0.5 mono">
-                    <?= sprintf('%02d', count($donors)) ?> <span class="text-xs text-slate-500 font-normal">nodes</span>
+                    <?= sprintf('%02d', $adminPagination['total']) ?> <span class="text-xs text-slate-500 font-normal">nodes</span>
                 </span>
             </div>
             <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)] animate-pulse"></div>
         </div>
     </div>
+
+    <?php
+    $locationStmt = $db->prepare("SELECT DISTINCT state_region FROM donors WHERE state_region IS NOT NULL AND state_region <> '' ORDER BY state_region");
+    $locationStmt->execute();
+    $donorLocations = [];
+    foreach ($locationStmt->fetchAll(\PDO::FETCH_COLUMN) as $loc) {
+        $donorLocations[(string)$loc] = (string)$loc;
+    }
+
+    $adminFilterConfig = [
+        'action' => '/BloodConnect/public/admin/donor-management',
+        'search_name' => 'q',
+        'search_placeholder' => 'Search name, email, phone or blood group…',
+        'fields' => [
+            [
+                'type' => 'select',
+                'name' => 'availability',
+                'label' => 'Availability',
+                'options' => [
+                    'available' => 'Available',
+                    'unavailable' => 'Unavailable',
+                    'inactive' => 'Inactive',
+                ],
+            ],
+            [
+                'type' => 'select',
+                'name' => 'status',
+                'label' => 'Status',
+                'options' => ['1' => 'Active', '0' => 'Inactive'],
+            ],
+            [
+                'type' => 'select',
+                'name' => 'blood_group',
+                'label' => 'Blood Group',
+                'options' => AdminFilters::bloodGroups($db),
+            ],
+            [
+                'type' => 'select',
+                'name' => 'location',
+                'label' => 'Location',
+                'options' => $donorLocations,
+            ],
+        ],
+    ];
+    require __DIR__ . '/../../../Shared/Presentation/View/partials/admin_filter_bar.php';
+    ?>
 
     <div class="space-y-3">
 
@@ -296,6 +404,8 @@ $pageTitle = match ($filter) {
             <?php endforeach; ?>
         </div>
     </div>
+
+    <?php require __DIR__ . '/../../../Shared/Presentation/View/partials/admin_pagination.php'; ?>
 </div>
 
 <script>

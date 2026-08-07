@@ -100,7 +100,20 @@ class UserRepository implements UserRepositoryInterface
 
         $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function getAdminEmails(): array
+    {
+        $stmt = $this->db->prepare("
+        SELECT user_id, username, email
+        FROM users
+        WHERE user_type_id = 1 AND deleted_at IS NULL
+    ");
+
+        $stmt->execute();
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     public function softDelete(int $id): bool

@@ -33,6 +33,10 @@ $donorLocation = !empty($donorLoc) ? htmlspecialchars(implode(', ', $donorLoc)) 
         </div>
 
         <div class="flex items-center gap-2 self-start sm:self-auto">
+            <a href="/BloodConnect/public/donor/donation/certificate/view?id=<?= (int)$request['request_id'] ?>"
+                class="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-red-700 shadow-sm transition-all active:scale-95">
+                <i class="fa-solid fa-award"></i> View Certificate
+            </a>
             <a href="/BloodConnect/public/donor/history" class="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-3xs transition-all active:scale-95">
                 <i class="fa-solid fa-arrow-left"></i> Back to History
             </a>

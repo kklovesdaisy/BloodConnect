@@ -12,6 +12,8 @@ use App\Admin\Presentation\Controller\AdminUserController;
 use App\Admin\Presentation\Controller\AdminBloodRequestController;
 use App\Admin\Presentation\Controller\AdminDonorController;
 use App\Admin\Presentation\Controller\AdminRoleController;
+use App\Admin\Presentation\Controller\AdminReportController;
+use App\Admin\Presentation\Controller\AdminBloodStockController;
 use App\Donor\Presentation\Controller\DonorController;
 use App\Authentication\Presentation\Controller\GoogleAuthController;
 
@@ -112,6 +114,7 @@ $router->group(['middleware' => ['auth', 'patient']], function (Router $router) 
         $router->get('/patient/my-requests', [PatientController::class, 'myRequests']);
         $router->get('/patient/my-requests/cancelled', [PatientController::class, 'cancelledRequests']);
         $router->get('/patient/my-request/view', [PatientController::class, 'viewMyRequest']);
+        $router->get('/patient/my-request/receipt', [PatientController::class, 'downloadRequestReceipt']);
         $router->post('/patient/request/cancel', [PatientController::class, 'cancelRequest']);
         $router->post('/patient/request/reactivate', [PatientController::class, 'reactivateRequest']);
     });
@@ -181,6 +184,7 @@ $router->group(['middleware' => ['auth', 'admin', 'can:donor.view']], function (
 $router->group(['middleware' => ['auth', 'admin', 'can:blood_request.view_matching']], function (Router $router) {
     $router->get('/admin/blood-requests', [AdminBloodRequestController::class, 'bloodRequests']);
     $router->get('/admin/blood-request/view', [AdminBloodRequestController::class, 'viewBloodRequest']);
+    $router->get('/admin/donation-history', [AdminBloodRequestController::class, 'donationHistory']);
     $router->post('/admin/blood-request/accept', [AdminBloodRequestController::class, 'acceptBloodRequest']);
     $router->post('/admin/blood-request/assign-donors', [AdminBloodRequestController::class, 'assignDonors']);
     $router->post('/admin/blood-request/notify-donors', [AdminBloodRequestController::class, 'notifyDonors']);
@@ -188,6 +192,10 @@ $router->group(['middleware' => ['auth', 'admin', 'can:blood_request.view_matchi
     $router->post('/admin/blood-request/reset-to-pending', [AdminBloodRequestController::class, 'resetToPending']);
     $router->get('/admin/request/complete', [AdminBloodRequestController::class, 'completeRequest']);
     $router->get('/admin/pending-blood-requests-count', [AdminBloodRequestController::class, 'pendingBloodRequestsCount']);
+
+    // Blood stock management
+    $router->get('/admin/blood-stock', [AdminBloodStockController::class, 'index']);
+    $router->post('/admin/blood-stock/adjust', [AdminBloodStockController::class, 'adjust']);
 });
 
 // Roles & permissions
@@ -198,6 +206,15 @@ $router->group(['middleware' => ['auth', 'admin', 'can:user_type.manage']], func
 });
 $router->group(['middleware' => ['auth', 'admin', 'can:permission.manage']], function (Router $router) {
     $router->post('/admin/roles/update-permissions', [AdminRoleController::class, 'updateRolePermissions']);
+});
+
+// Export reports (PDF & Excel)
+$router->group(['middleware' => ['auth', 'admin', 'can:report.view']], function (Router $router) {
+    $router->get('/admin/reports', [AdminReportController::class, 'index']);
+    $router->get('/admin/reports/donors', [AdminReportController::class, 'donors']);
+    $router->get('/admin/reports/patients', [AdminReportController::class, 'patients']);
+    $router->get('/admin/reports/blood-requests', [AdminReportController::class, 'bloodRequests']);
+    $router->get('/admin/reports/donations', [AdminReportController::class, 'donations']);
 });
 
 /*
@@ -224,6 +241,8 @@ $router->group(['middleware' => ['auth', 'donor']], function (Router $router) {
     $router->middleware(['can:donation_history.view'], function (Router $router) {
         $router->get('/donor/history', [DonorController::class, 'history']);
         $router->get('/donor/history/view', [DonorController::class, 'viewHistory']);
+        $router->get('/donor/donation/certificate/view', [DonorController::class, 'viewDonationCertificate']);
+        $router->get('/donor/donation/certificate', [DonorController::class, 'downloadDonationCertificate']);
     });
     $router->middleware(['can:profile.update'], function (Router $router) {
         $router->get('/donor/profile/update', [DonorController::class, 'updateProfilePage']);

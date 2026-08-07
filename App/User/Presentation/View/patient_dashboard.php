@@ -137,6 +137,7 @@ $metrics = $metrics ?? [
                                 <th class="py-4 px-6">Contact Phone</th>
                                 <th class="py-4 px-6 text-center">Status</th>
                                 <th class="py-4 px-6 text-right">Date</th>
+                                <th class="py-4 px-6 text-right">Expires</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 text-sm font-medium text-slate-600">
@@ -183,6 +184,9 @@ $metrics = $metrics ?? [
                                                     case 'completed':
                                                         echo '<span class="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600">Completed</span>';
                                                         break;
+                                                    case 'expired':
+                                                        echo '<span class="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-600">Expired</span>';
+                                                        break;
                                                     default:
                                                         echo '<span class="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600">Cancelled</span>';
                                                 }
@@ -190,11 +194,32 @@ $metrics = $metrics ?? [
                                             ?>
                                         </td>
                                         <td class="py-4 px-6 text-right text-slate-400 text-xs"><?= date('d M Y', strtotime($request['created_at'])) ?></td>
+                                        <td class="py-4 px-6 text-right">
+                                            <?php
+                                            $expiry = $request['expiry_date'] ?? '';
+                                            $showExpiry = in_array($statusKey, ['pending', 'expired']);
+                                            if ($showExpiry && $expiry !== ''):
+                                                $expiryTs = strtotime($expiry);
+                                                $diff = $expiryTs - time();
+                                            ?>
+                                                <span class="text-xs font-semibold text-slate-600 block"><?= date('d M Y', $expiryTs) ?></span>
+                                                <?php if ($diff > 0):
+                                                    $days = floor($diff / 86400);
+                                                    $hours = floor(($diff % 86400) / 3600);
+                                                ?>
+                                                    <span class="text-[10px] text-amber-500 block mt-0.5"><?= $days > 0 ? $days . 'd ' . $hours . 'h' : $hours . 'h' ?> left</span>
+                                                <?php else: ?>
+                                                    <span class="text-[10px] font-bold text-slate-500 block mt-0.5">Expired</span>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <span class="text-xs text-slate-300">—</span>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="9" class="py-12 text-center text-slate-400 font-normal">No active blood requests found.</td>
+                                    <td colspan="10" class="py-12 text-center text-slate-400 font-normal">No active blood requests found.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -223,6 +248,23 @@ $metrics = $metrics ?? [
                                     <p class="text-xs text-slate-400">
                                         <?= htmlspecialchars($request['unit']) ?> Units &bull; Requested on <?= date('d M Y', strtotime($request['created_at'])) ?>
                                     </p>
+                                    <?php
+                                    $mobileExpiry = $request['expiry_date'] ?? '';
+                                    $mobileStatusKey2 = strtolower($request['status']);
+                                    if (in_array($mobileStatusKey2, ['pending', 'expired']) && $mobileExpiry !== ''):
+                                        $mobileExpiryTs = strtotime($mobileExpiry);
+                                        $mobileDiff = $mobileExpiryTs - time();
+                                    ?>
+                                        <p class="text-xs text-slate-400 pt-0.5">
+                                            <i class="fa-regular fa-clock text-slate-400 text-xs mr-1"></i>
+                                            Expires <?= date('d M Y', $mobileExpiryTs) ?>
+                                            <?php if ($mobileDiff > 0):
+                                                $mobileDays = floor($mobileDiff / 86400);
+                                                $mobileHours = floor(($mobileDiff % 86400) / 3600);
+                                                echo '&bull; <span class="text-amber-600 font-semibold">' . ($mobileDays > 0 ? $mobileDays . 'd ' . $mobileHours . 'h' : $mobileHours . 'h') . ' left</span>';
+                                            endif; ?>
+                                        </p>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <div class="sm:text-right flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-50">
@@ -231,7 +273,7 @@ $metrics = $metrics ?? [
                                 $mobileStatusKey = strtolower($request['status']);
                                 $mobileStatusDisplay = in_array($mobileStatusKey, ['pending', 'assigned', 'declined']) ? 'Pending' : ucfirst($mobileStatusKey);
                                 ?>
-                                <span class="bg-amber-50 text-amber-700 px-4 py-1.5 text-xs font-bold rounded-xl">
+                                <span class="<?= $mobileStatusKey === 'expired' ? 'bg-slate-200 text-slate-600' : 'bg-amber-50 text-amber-700' ?> px-4 py-1.5 text-xs font-bold rounded-xl">
                                     <?= htmlspecialchars($mobileStatusDisplay) ?>
                                 </span>
                             </div>

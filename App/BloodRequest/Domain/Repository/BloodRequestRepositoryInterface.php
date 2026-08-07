@@ -12,6 +12,8 @@ interface BloodRequestRepositoryInterface
     public function findDonorRequestDetail(int $requestId, int $donorId, int $acceptedStatus): array;
     public function create(array $data): bool;
     public function findAll(): array;
+    public function findOverdueRequests(): array;
+    public function expireOverdueRequests(): int;
     public function findPendingRequestsForDonor(string $bloodGroup, int $excludeDonorId = 0): array;
     public function findCompetingRequests(string $bloodGroup, string $stateRegion, int $excludeRequestId): array;
     public function getMatchingDonors(string $bloodGroup, ?string $township = null, ?string $stateRegion = null): array;

@@ -7,9 +7,25 @@ namespace Composer\Autoload;
 class ComposerStaticInit9da11d0281f0b7a0bea4870af928f917
 {
     public static $prefixLengthsPsr4 = array (
+        'M' =>
+        array (
+            'Masterminds\\' => 12,
+        ),
+        'F' =>
+        array (
+            'FontLib\\' => 8,
+        ),
+        'D' =>
+        array (
+            'Dompdf\\' => 7,
+        ),
         'R' =>
         array (
             'Routes\\' => 7,
+        ),
+        'S' =>
+        array (
+            'Svg\\' => 4,
         ),
         'A' =>
         array (
@@ -18,9 +34,25 @@ class ComposerStaticInit9da11d0281f0b7a0bea4870af928f917
     );
 
     public static $prefixDirsPsr4 = array (
+        'Masterminds\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/vendor/masterminds/html5/src',
+        ),
+        'FontLib\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/vendor/dompdf/php-font-lib/src/FontLib',
+        ),
+        'Dompdf\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/vendor/dompdf/dompdf/src',
+        ),
         'Routes\\' =>
         array (
             0 => __DIR__ . '/../..' . '/routes',
+        ),
+        'Svg\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/vendor/dompdf/php-svg-lib/src/Svg',
         ),
         'App\\' =>
         array (
@@ -30,6 +62,7 @@ class ComposerStaticInit9da11d0281f0b7a0bea4870af928f917
 
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'Dompdf\\Cpdf' => __DIR__ . '/../..' . '/vendor/dompdf/dompdf/lib/Cpdf.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

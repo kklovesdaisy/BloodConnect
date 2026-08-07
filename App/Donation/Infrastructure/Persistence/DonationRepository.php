@@ -105,4 +105,37 @@ class DonationRepository implements DonationRepositoryInterface
         $stmt = $this->db->query("SELECT COUNT(*) FROM donation_history");
         return (int)$stmt->fetchColumn();
     }
+
+    public function findDonationForCertificate(int $requestId, int $donorId): ?array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT
+                dh.donation_id,
+                dh.request_id,
+                dh.donor_id,
+                dh.donation_date,
+                dh.status,
+                dh.remarks,
+                dh.created_at,
+                br.request_code,
+                br.hospital_name,
+                br.blood_group_needed,
+                donor.username AS donor_name,
+                donor.email AS donor_email,
+                donor.blood_group AS donor_blood_group
+             FROM donation_history dh
+             LEFT JOIN blood_requests br ON br.request_id = dh.request_id
+             LEFT JOIN users donor ON donor.user_id = dh.donor_id
+             WHERE dh.request_id = ?
+               AND dh.donor_id = ?
+             ORDER BY dh.donation_id DESC
+             LIMIT 1"
+        );
+
+        $stmt->execute([$requestId, $donorId]);
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
 }

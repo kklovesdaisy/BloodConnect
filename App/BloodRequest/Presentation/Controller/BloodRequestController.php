@@ -2,16 +2,16 @@
 
 namespace App\BloodRequest\Presentation\Controller;
 
-use App\BloodRequest\Domain\Repository\BloodRequestRepositoryInterface;
 use App\BloodRequest\Application\UseCase\CreateBloodRequestUseCase;
+use App\BloodRequest\Application\UseCase\ExpireOverdueRequestsUseCase;
 use App\Shared\Helpers\Session;
 use App\Shared\Presentation\View\View;
 
 class BloodRequestController
 {
     public function __construct(
-        private BloodRequestRepositoryInterface $repository,
-        private CreateBloodRequestUseCase $createUseCase
+        private CreateBloodRequestUseCase $createUseCase,
+        private ExpireOverdueRequestsUseCase $expireUseCase
     ) {}
 
 
@@ -49,6 +49,8 @@ class BloodRequestController
             exit;
         }
 
+        $this->expireUseCase->execute();
+
         $data = [
             'blood_group_needed' => trim($_POST['blood_group_needed']),
             'hospital_name'      => trim($_POST['hospital_name']),
@@ -57,7 +59,7 @@ class BloodRequestController
             'hospital_address'   => trim($_POST['hospital_address'] ?? ''),
             'urgency'            => trim($_POST['urgency']),
             'contact_phone'      => trim($_POST['contact_phone']),
-            'unit'               => (int)($_POST['unit'] ?? 1),
+            'unit'               => min(2, max(1, (int)($_POST['unit'] ?? 1))),
         ];
 
         $result = $this->createUseCase->execute(

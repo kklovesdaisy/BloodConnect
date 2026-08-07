@@ -11,28 +11,87 @@ $db = Database::getConnection(); ?>
 </style>
 <?php
 
+use App\Shared\Helpers\AdminFilters;
+
 $filter = $_GET['filter'] ?? '';
+$q = AdminFilters::strParam('q');
+$reqStatus = AdminFilters::strParam('req_status');
+$bloodGroup = AdminFilters::strParam('blood_group');
+$urgency = AdminFilters::strParam('urgency');
+$dateFrom = AdminFilters::strParam('from');
+$dateTo = AdminFilters::strParam('to');
 
 /* Fetch blood requests from the database */
 $requests = [];
 
 try {
-    $where = '';
-    if ($filter === 'pending') {
-        $where = 'WHERE r.status = 7';
+    $conditions = [];
+    $params = [];
+
+    if ($reqStatus !== '') {
+        $conditions[] = 'r.status = ?';
+        $params[] = (int)$reqStatus;
+    } elseif ($filter === 'pending') {
+        $conditions[] = 'r.status = 7';
     } elseif ($filter === 'assigned') {
-        $where = 'WHERE r.status = 42';
+        $conditions[] = 'r.status = 42';
     } elseif ($filter === 'accepted') {
-        $where = 'WHERE r.status IN (8, 9)';
+        $conditions[] = 'r.status IN (8, 9)';
     } elseif ($filter === 'completed') {
-        $where = 'WHERE r.status = 9';
+        $conditions[] = 'r.status = 9';
     } elseif ($filter === 'declined') {
-        $where = 'WHERE r.status = 47';
+        $conditions[] = 'r.status = 47';
+    } elseif ($filter === 'expired') {
+        $conditions[] = 'r.status = 48';
     }
+
+    if ($bloodGroup !== '') {
+        $conditions[] = 'r.blood_group_needed = ?';
+        $params[] = $bloodGroup;
+    }
+
+    if ($urgency !== '') {
+        $conditions[] = 'UPPER(r.urgency) = ?';
+        $params[] = strtoupper($urgency);
+    }
+
+    if ($q !== '') {
+        $conditions[] = '(r.hospital_name LIKE ? OR r.patient_name LIKE ? OR r.request_code LIKE ? OR r.contact_phone LIKE ? OR donor.username LIKE ?)';
+        $like = '%' . $q . '%';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    if ($dateFrom !== '') {
+        $conditions[] = 'DATE(r.created_at) >= ?';
+        $params[] = $dateFrom;
+    }
+
+    if ($dateTo !== '') {
+        $conditions[] = 'DATE(r.created_at) <= ?';
+        $params[] = $dateTo;
+    }
+
+    $where = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
+
+    $stmt = $db->prepare("
+        SELECT COUNT(*)
+        FROM blood_requests r
+        LEFT JOIN users donor ON donor.user_id = r.donor_id
+        {$where}
+    ");
+    $stmt->execute($params);
+    $totalRequests = (int)$stmt->fetchColumn();
+
+    $adminPagination = AdminFilters::paginate($totalRequests, 20);
 
     $stmt = $db->prepare("
         SELECT
             r.request_id,
+            r.request_code,
             r.hospital_name,
             r.patient_name,
             r.blood_group_needed AS blood_type,
@@ -41,6 +100,7 @@ try {
             COALESCE(md.label, 'Pending') AS fulfillment_status,
             r.status AS status_id,
             COALESCE(r.created_at, CURRENT_TIMESTAMP) AS required_date,
+            r.expiry_date,
             r.donor_id,
             donor.username AS donor_name
         FROM blood_requests r
@@ -48,11 +108,13 @@ try {
         LEFT JOIN users donor ON donor.user_id = r.donor_id
         {$where}
         ORDER BY r.created_at DESC
+        LIMIT {$adminPagination['perPage']} OFFSET {$adminPagination['offset']}
     ");
-    $stmt->execute();
+    $stmt->execute($params);
     $requests = $stmt->fetchAll();
 } catch (Throwable $e) {
     $requests = [];
+    $adminPagination = AdminFilters::paginate(0, 10);
 }
 
 $pageTitle = match ($filter) {
@@ -61,6 +123,7 @@ $pageTitle = match ($filter) {
     'accepted' => 'Accepted Blood Requests',
     'completed' => 'Completed Blood Requests',
     'declined' => 'Declined Blood Requests',
+    'expired' => 'Expired Blood Requests',
     default => 'Blood Requests',
 };
 
@@ -81,6 +144,7 @@ function getFulfillmentClass($status)
         'completed' => 'bg-blue-50 text-blue-600 border-blue-200/50',
         'cancelled', 'canceled' => 'bg-red-50 text-red-600 border-red-200/50',
         'declined' => 'bg-rose-50 text-rose-600 border-rose-200/50',
+        'expired' => 'bg-slate-100 text-slate-500 border-slate-200/50',
         default => 'bg-slate-50 text-slate-600 border-slate-200/50',
     };
 }
@@ -154,12 +218,47 @@ function getBloodTypeClass($type)
             <div class="flex flex-col">
                 <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Active Tickets</span>
                 <span class="text-lg font-extrabold tracking-tight mt-0.5 mono">
-                    <?= sprintf('%02d', count($requests)) ?> <span class="text-xs text-slate-500 font-normal">nodes</span>
+                    <?= sprintf('%02d', $adminPagination['total']) ?> <span class="text-xs text-slate-500 font-normal">nodes</span>
                 </span>
             </div>
             <div class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)] animate-pulse"></div>
         </div>
     </div>
+
+    <?php
+    $adminFilterConfig = [
+        'action' => '/BloodConnect/public/admin/blood-requests',
+        'search_name' => 'q',
+        'search_placeholder' => 'Search hospital, patient, request code or donor…',
+        'fields' => [
+            [
+                'type' => 'select',
+                'name' => 'req_status',
+                'label' => 'Request Status',
+                'options' => AdminFilters::requestStatuses($db),
+            ],
+            [
+                'type' => 'select',
+                'name' => 'urgency',
+                'label' => 'Urgency',
+                'options' => [
+                    'Standard' => 'Standard',
+                    'Urgent' => 'Urgent',
+                    'Critical' => 'Critical',
+                ],
+            ],
+            [
+                'type' => 'select',
+                'name' => 'blood_group',
+                'label' => 'Blood Group',
+                'options' => AdminFilters::bloodGroups($db),
+            ],
+            ['type' => 'date', 'name' => 'from', 'label' => 'From'],
+            ['type' => 'date', 'name' => 'to', 'label' => 'To'],
+        ],
+    ];
+    require __DIR__ . '/../../../Shared/Presentation/View/partials/admin_filter_bar.php';
+    ?>
 
     <div class="space-y-3">
 
@@ -204,6 +303,14 @@ function getBloodTypeClass($type)
                             <span class="inline-block px-3 py-1 text-[9px] font-extrabold rounded-lg uppercase tracking-widest border shadow-3xs <?= getFulfillmentClass($req['fulfillment_status']) ?>">
                                 <?= htmlspecialchars($req['fulfillment_status']) ?>
                             </span>
+                            <?php if ((int)$req['status_id'] === 7 && !empty($req['expiry_date'])):
+                                $admExpiryDiff = strtotime($req['expiry_date']) - time();
+                                if ($admExpiryDiff > 0):
+                                    $admDays = floor($admExpiryDiff / 86400);
+                                    $admHours = floor(($admExpiryDiff % 86400) / 3600);
+                            ?>
+                                <span class="text-[10px] font-medium text-amber-500">Expires in <?= $admDays > 0 ? $admDays . 'd ' . $admHours . 'h' : $admHours . 'h' ?></span>
+                            <?php endif; endif; ?>
                             <?php if (!empty($req['donor_name']) && (int)$req['status_id'] !== 7): ?>
                                 <span class="text-[10px] font-medium text-slate-500 truncate max-w-full">
                                     <?php if ((int)$req['status_id'] === 42): ?>
@@ -298,6 +405,8 @@ function getBloodTypeClass($type)
             </div>
         <?php endif; ?>
     </div>
+
+    <?php require __DIR__ . '/../../../Shared/Presentation/View/partials/admin_pagination.php'; ?>
 </div>
 
 <script>

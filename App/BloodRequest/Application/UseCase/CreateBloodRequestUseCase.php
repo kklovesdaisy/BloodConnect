@@ -7,6 +7,7 @@ use App\Notification\Domain\Repository\NotificationRepositoryInterface;
 use App\User\Domain\Repository\UserRepositoryInterface;
 use App\Shared\Infrastructure\Persistence\MasterDataRepository;
 use App\Shared\Infrastructure\Activity\ActivityLogger;
+use App\Shared\Infrastructure\Mail\EmailService;
 
 class CreateBloodRequestUseCase
 {
@@ -15,7 +16,8 @@ class CreateBloodRequestUseCase
         private NotificationRepositoryInterface $notificationRepo,
         private UserRepositoryInterface $userRepo,
         private MasterDataRepository $masterRepo,
-        private ActivityLogger $activityLogger
+        private ActivityLogger $activityLogger,
+        private EmailService $emailService
     ) {}
 
     public function execute(int $patientId, string $patientName, array $data): array
@@ -54,6 +56,7 @@ class CreateBloodRequestUseCase
             'contact_phone'     => $data['contact_phone'],
             'unit'              => (int)($data['unit'] ?? 1),
             'status'            => $pendingStatus,
+            'expiry_date'       => date('Y-m-d H:i:s', strtotime('+2 days')),
         ];
 
         $saved = $this->bloodRequestRepo->create($requestData);
@@ -106,6 +109,20 @@ class CreateBloodRequestUseCase
                 ),
                 'REQUEST'
             );
+        }
+
+        $emailData = [
+            'patient_name'   => $patientName,
+            'blood_group'    => $this->masterRepo->getLabel('BLOOD_GROUP', (string)$data['blood_group_needed']) ?? $data['blood_group_needed'],
+            'hospital_name'  => $data['hospital_name'],
+            'urgency'        => $data['urgency'],
+            'request_code'   => $requestCode,
+        ];
+        $adminEmails = $this->userRepo->getAdminEmails();
+        foreach ($adminEmails as $admin) {
+            if (!empty($admin['email'])) {
+                $this->emailService->sendNewBloodRequestSubmitted($admin['email'], $emailData);
+            }
         }
 
         return ['success' => true, 'request_code' => $requestCode];

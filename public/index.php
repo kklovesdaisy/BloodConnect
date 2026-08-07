@@ -51,6 +51,11 @@ $container->singleton(
     \App\User\Infrastructure\Persistence\UserRepository::class
 );
 
+$container->singleton(
+    \App\BloodStock\Domain\Repository\BloodStockRepositoryInterface::class,
+    \App\BloodStock\Infrastructure\Persistence\BloodStockRepository::class
+);
+
 // ===== Shared Service Bindings =====
 $container->singleton(
     \App\Shared\Infrastructure\Persistence\MasterDataRepository::class,
@@ -70,6 +75,38 @@ $container->singleton(
 $container->singleton(
     \App\Shared\Infrastructure\Activity\ActivityLogger::class,
     \App\Shared\Infrastructure\Activity\ActivityLogger::class
+);
+
+// ===== Blood Request Receipt (PDF) =====
+$container->singleton(
+    \App\Shared\Infrastructure\Pdf\BloodRequestReceiptPdfGenerator::class,
+    \App\Shared\Infrastructure\Pdf\BloodRequestReceiptPdfGenerator::class
+);
+
+$container->singleton(
+    \App\BloodRequest\Application\UseCase\GenerateRequestReceiptUseCase::class,
+    function (\App\Shared\Infrastructure\Container\Container $c) {
+        return new \App\BloodRequest\Application\UseCase\GenerateRequestReceiptUseCase(
+            $c->get(\App\BloodRequest\Domain\Repository\BloodRequestRepositoryInterface::class),
+            $c->get(\App\Shared\Infrastructure\Pdf\BloodRequestReceiptPdfGenerator::class)
+        );
+    }
+);
+
+// ===== Donation Certificate (PDF) =====
+$container->singleton(
+    \App\Shared\Infrastructure\Pdf\DonationCertificatePdfGenerator::class,
+    \App\Shared\Infrastructure\Pdf\DonationCertificatePdfGenerator::class
+);
+
+$container->singleton(
+    \App\Donation\Application\UseCase\GenerateDonationCertificateUseCase::class,
+    function (\App\Shared\Infrastructure\Container\Container $c) {
+        return new \App\Donation\Application\UseCase\GenerateDonationCertificateUseCase(
+            $c->get(\App\Donation\Domain\Repository\DonationRepositoryInterface::class),
+            $c->get(\App\Shared\Infrastructure\Pdf\DonationCertificatePdfGenerator::class)
+        );
+    }
 );
 
 // ===== Admin Controllers =====
@@ -109,7 +146,8 @@ $container->singleton(
             $c->get(\App\Admin\Application\UseCase\FindMatchingDonorsUseCase::class),
             $c->get(\App\Admin\Application\UseCase\AssignDonorsUseCase::class),
             $c->get(\App\Admin\Application\UseCase\DeleteBloodRequestUseCase::class),
-            $c->get(\App\Admin\Application\UseCase\NotifyDonorsUseCase::class)
+            $c->get(\App\Admin\Application\UseCase\NotifyDonorsUseCase::class),
+            $c->get(\App\BloodRequest\Application\UseCase\ExpireOverdueRequestsUseCase::class)
         );
     }
 );
@@ -120,6 +158,15 @@ $container->singleton(
         return new \App\Admin\Presentation\Controller\AdminRoleController(
             $c->get(\App\Shared\Infrastructure\Persistence\RoleRepository::class),
             $c->get(\App\Notification\Domain\Repository\NotificationRepositoryInterface::class)
+        );
+    }
+);
+
+$container->singleton(
+    \App\Admin\Presentation\Controller\AdminBloodStockController::class,
+    function (\App\Shared\Infrastructure\Container\Container $c) {
+        return new \App\Admin\Presentation\Controller\AdminBloodStockController(
+            $c->get(\App\Admin\Application\UseCase\ManageBloodStockUseCase::class)
         );
     }
 );

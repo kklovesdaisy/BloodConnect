@@ -873,44 +873,45 @@ CREATE TABLE `blood_requests` (
   `status` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `unit` int(11) NOT NULL DEFAULT 1,
-  `donor_id` int(11) DEFAULT NULL
+  `donor_id` int(11) DEFAULT NULL,
+  `expiry_date` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `blood_requests`
 --
 
-INSERT INTO `blood_requests` (`request_id`, `request_code`, `patient_id`, `patient_name`, `blood_group_needed`, `hospital_name`, `state_region`, `township`, `hospital_address`, `urgency`, `contact_phone`, `status`, `created_at`, `unit`, `donor_id`) VALUES
-(222, 'REQ20260716095231', 180, 'Kay Kay', 'B+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123,Hnin Si', 'Urgent', '09671739912', 8, '2026-07-16 03:22:31', 3, 181),
-(223, 'REQ20260716100214', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123,Hnin si', 'Standard', '09671739912', 8, '2026-07-16 03:32:14', 3, 182),
-(224, 'REQ20260716105425', 180, 'Kay Kay', 'B+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09671739912', 8, '2026-07-16 04:24:25', 2, 184),
-(225, 'REQ20260716113650', 180, 'Kay Kay', 'O+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Critical', '09671739912', 10, '2026-07-16 05:06:50', 2, NULL),
-(228, 'REQ20260716115239', 172, 'Dar Dar', 'O+', 'City Hospital', 'Mandalay', 'Naypyitaw', '123', 'Standard', '09663237617', 8, '2026-07-16 05:22:39', 2, 186),
-(230, 'REQ20260716121718', 172, 'Dar Dar', 'A+', 'Grand Hospital,Yangon', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09663237617', 8, '2026-07-16 05:47:18', 3, 183),
-(231, 'REQ20260716121752', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Standard', '09671739912', 10, '2026-07-16 05:47:52', 3, NULL),
-(232, 'REQ20260716131027', 180, 'Kay Kay', 'AB+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09671739912', 10, '2026-07-16 06:40:27', 2, NULL),
-(235, 'REQ20260716131803', 172, 'Dar Dar', 'AB+', 'Grand Hospital', 'Yangon', 'North Okkalapa', '123', 'Critical', '09663237617', 8, '2026-07-16 06:48:03', 3, 187),
-(236, 'REQ20260716134017', 172, 'Dar Dar', 'AB+', 'Grand Hospital', 'Yangon', 'Hlaing', '123', 'Standard', '09663237617', 8, '2026-07-16 07:10:17', 3, 189),
-(239, 'REQ20260716173351', 180, 'Kay Kay', 'O+', 'Grand Hospital ,Yangon', 'Yangon', 'North Okkalapa', '123', 'Standard', '09671739912', 10, '2026-07-16 11:03:51', 3, 190),
-(240, 'REQ20260716201945', 180, 'Kay Kay', 'O+', 'Grand Hospital , Yangon', 'Yangon', 'Hlaing', '123', 'Standard', '09671739912', 10, '2026-07-16 13:49:45', 2, 190),
-(241, 'REQ20260716202444', 172, 'Dar Dar', 'O+', 'Grand Hospital', 'Yangon', 'Hlaing', '123', 'Urgent', '09953050708', 8, '2026-07-16 13:54:44', 2, 190),
-(244, 'REQ20260716230505', 180, 'Kay Kay', 'O+', 'Grand Hospital, Yangon', 'Yangon', 'Hlaing', '123', 'Urgent', '09671739912', 8, '2026-07-16 16:35:05', 3, 191),
-(245, 'REQ20260716230550', 172, 'Dar Dar', 'O+', 'Grand Hospital', 'Yangon', 'Hlaing', '123', 'Critical', '09663237617', 42, '2026-07-16 16:35:50', 2, 192),
-(246, 'REQ20260716234057', 180, 'Kay Kay', 'O+', 'Grand Hospital, Yangon', 'Mandalay', 'Naypyitaw', '123', 'Standard', '09671739912', 8, '2026-07-16 17:10:57', 3, 192),
-(248, 'REQ20260716234940', 172, 'Dar Dar', 'A+', 'Grand Hospital', 'Yangon', 'Thanlyin', '123', 'Urgent', '09663237617', 8, '2026-07-16 17:19:40', 3, 193),
-(251, 'REQ20260717094731', 172, 'Dar Dar', 'A+', 'Grand Hospital', 'Yangon', 'Thanlyin', '125', 'Critical', '09663237617', 8, '2026-07-17 03:17:31', 2, 194),
-(253, 'REQ20260717101222', 172, 'Dar Dar', 'B+', 'City Hospital', 'Yangon', 'Hlaing', '126', 'Standard', '09663237617', 8, '2026-07-17 03:42:22', 2, 196),
-(255, 'REQ20260717101619', 172, 'Dar Dar', 'A+', 'Grand Hospital', 'Yangon', 'North Okkalapa', '125', 'Urgent', '09663237617', 8, '2026-07-17 03:46:19', 2, 197),
-(257, 'REQ20260717132601', 172, 'Dar Dar', 'B+', 'Grand Hospital', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09663237617', 10, '2026-07-17 06:56:01', 3, NULL),
-(259, 'REQ20260717133921', 172, 'Dar Dar', 'B+', 'Grand Hospital', 'Yangon', 'Hlaing', '123', 'Standard', '09663237617', 8, '2026-07-17 07:09:21', 3, 198),
-(260, 'REQ20260717134624', 172, 'Dar Dar', 'AB-', 'Grand Hospital', 'Yangon', 'North Okkalapa', '123', 'Standard', '09663237617', 10, '2026-07-17 07:16:24', 2, NULL),
-(261, 'REQ20260717134823', 172, 'Dar Dar', 'A+', 'Grand Hospital', 'Yangon', 'Hlaing', '123', 'Urgent', '09663237617', 8, '2026-07-17 07:18:23', 2, 199),
-(262, 'REQ20260717140932', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '125', 'Standard', '09671739912', 10, '2026-07-17 07:39:32', 2, NULL),
-(263, 'REQ20260718091701', 172, 'Dar Dar', 'A+', 'Grand Hospital', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09663237617', 8, '2026-07-18 02:47:01', 2, 201),
-(264, 'REQ20260718091941', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Standard', '09671739912', 10, '2026-07-18 02:49:41', 2, NULL),
-(265, 'REQ20260718092050', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09671739912', 10, '2026-07-18 02:50:50', 1, NULL),
-(266, 'REQ20260718092203', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'Thanlyin', '123', 'Urgent', '09671739912', 10, '2026-07-18 02:52:03', 2, NULL),
-(267, 'REQ20260719235044', 180, 'Kay Kay', 'B+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '670,Kant Gaw st,Hta Ward', 'Urgent', '09671739912', 8, '2026-07-19 17:20:44', 2, 202),
+INSERT INTO `blood_requests` (`request_id`, `request_code`, `patient_id`, `patient_name`, `blood_group_needed`, `hospital_name`, `state_region`, `township`, `hospital_address`, `urgency`, `contact_phone`, `status`, `created_at`, `unit`, `donor_id`, `expiry_date`) VALUES
+(222, 'REQ20260716095231', 180, 'Kay Kay', 'B+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123,Hnin Si', 'Urgent', '09671739912', 8, '2026-07-16 03:22:31', 3, 181, '2026-07-18 03:22:31'),
+(223, 'REQ20260716100214', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123,Hnin si', 'Standard', '09671739912', 8, '2026-07-16 03:32:14', 3, 182, '2026-07-18 03:32:14'),
+(224, 'REQ20260716105425', 180, 'Kay Kay', 'B+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09671739912', 8, '2026-07-16 04:24:25', 2, 184, '2026-07-18 04:24:25'),
+(225, 'REQ20260716113650', 180, 'Kay Kay', 'O+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Critical', '09671739912', 10, '2026-07-16 05:06:50', 2, NULL, '2026-07-18 05:06:50'),
+(228, 'REQ20260716115239', 172, 'Dar Dar', 'O+', 'City Hospital', 'Mandalay', 'Naypyitaw', '123', 'Standard', '09663237617', 8, '2026-07-16 05:22:39', 2, 186, '2026-07-18 05:22:39'),
+(230, 'REQ20260716121718', 172, 'Dar Dar', 'A+', 'Grand Hospital,Yangon', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09663237617', 8, '2026-07-16 05:47:18', 3, 183, '2026-07-18 05:47:18'),
+(231, 'REQ20260716121752', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Standard', '09671739912', 10, '2026-07-16 05:47:52', 3, NULL, '2026-07-18 05:47:52'),
+(232, 'REQ20260716131027', 180, 'Kay Kay', 'AB+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09671739912', 10, '2026-07-16 06:40:27', 2, NULL, '2026-07-18 06:40:27'),
+(235, 'REQ20260716131803', 172, 'Dar Dar', 'AB+', 'Grand Hospital', 'Yangon', 'North Okkalapa', '123', 'Critical', '09663237617', 8, '2026-07-16 06:48:03', 3, 187, '2026-07-18 06:48:03'),
+(236, 'REQ20260716134017', 172, 'Dar Dar', 'AB+', 'Grand Hospital', 'Yangon', 'Hlaing', '123', 'Standard', '09663237617', 8, '2026-07-16 07:10:17', 3, 189, '2026-07-18 07:10:17'),
+(239, 'REQ20260716173351', 180, 'Kay Kay', 'O+', 'Grand Hospital ,Yangon', 'Yangon', 'North Okkalapa', '123', 'Standard', '09671739912', 10, '2026-07-16 11:03:51', 3, 190, '2026-07-18 11:03:51'),
+(240, 'REQ20260716201945', 180, 'Kay Kay', 'O+', 'Grand Hospital , Yangon', 'Yangon', 'Hlaing', '123', 'Standard', '09671739912', 10, '2026-07-16 13:49:45', 2, 190, '2026-07-18 13:49:45'),
+(241, 'REQ20260716202444', 172, 'Dar Dar', 'O+', 'Grand Hospital', 'Yangon', 'Hlaing', '123', 'Urgent', '09953050708', 8, '2026-07-16 13:54:44', 2, 190, '2026-07-18 13:54:44'),
+(244, 'REQ20260716230505', 180, 'Kay Kay', 'O+', 'Grand Hospital, Yangon', 'Yangon', 'Hlaing', '123', 'Urgent', '09671739912', 8, '2026-07-16 16:35:05', 3, 191, '2026-07-18 16:35:05'),
+(245, 'REQ20260716230550', 172, 'Dar Dar', 'O+', 'Grand Hospital', 'Yangon', 'Hlaing', '123', 'Critical', '09663237617', 42, '2026-07-16 16:35:50', 2, 192, '2026-07-18 16:35:50'),
+(246, 'REQ20260716234057', 180, 'Kay Kay', 'O+', 'Grand Hospital, Yangon', 'Mandalay', 'Naypyitaw', '123', 'Standard', '09671739912', 8, '2026-07-16 17:10:57', 3, 192, '2026-07-18 17:10:57'),
+(248, 'REQ20260716234940', 172, 'Dar Dar', 'A+', 'Grand Hospital', 'Yangon', 'Thanlyin', '123', 'Urgent', '09663237617', 8, '2026-07-16 17:19:40', 3, 193, '2026-07-18 17:19:40'),
+(251, 'REQ20260717094731', 172, 'Dar Dar', 'A+', 'Grand Hospital', 'Yangon', 'Thanlyin', '125', 'Critical', '09663237617', 8, '2026-07-17 03:17:31', 2, 194, '2026-07-19 03:17:31'),
+(253, 'REQ20260717101222', 172, 'Dar Dar', 'B+', 'City Hospital', 'Yangon', 'Hlaing', '126', 'Standard', '09663237617', 8, '2026-07-17 03:42:22', 2, 196, '2026-07-19 03:42:22'),
+(255, 'REQ20260717101619', 172, 'Dar Dar', 'A+', 'Grand Hospital', 'Yangon', 'North Okkalapa', '125', 'Urgent', '09663237617', 8, '2026-07-17 03:46:19', 2, 197, '2026-07-19 03:46:19'),
+(257, 'REQ20260717132601', 172, 'Dar Dar', 'B+', 'Grand Hospital', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09663237617', 10, '2026-07-17 06:56:01', 3, NULL, '2026-07-19 06:56:01'),
+(259, 'REQ20260717133921', 172, 'Dar Dar', 'B+', 'Grand Hospital', 'Yangon', 'Hlaing', '123', 'Standard', '09663237617', 8, '2026-07-17 07:09:21', 3, 198, '2026-07-19 07:09:21'),
+(260, 'REQ20260717134624', 172, 'Dar Dar', 'AB-', 'Grand Hospital', 'Yangon', 'North Okkalapa', '123', 'Standard', '09663237617', 10, '2026-07-17 07:16:24', 2, NULL, '2026-07-19 07:16:24'),
+(261, 'REQ20260717134823', 172, 'Dar Dar', 'A+', 'Grand Hospital', 'Yangon', 'Hlaing', '123', 'Urgent', '09663237617', 8, '2026-07-17 07:18:23', 2, 199, '2026-07-19 07:18:23'),
+(262, 'REQ20260717140932', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '125', 'Standard', '09671739912', 10, '2026-07-17 07:39:32', 2, NULL, '2026-07-19 07:39:32'),
+(263, 'REQ20260718091701', 172, 'Dar Dar', 'A+', 'Grand Hospital', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09663237617', 8, '2026-07-18 02:47:01', 2, 201, '2026-07-20 02:47:01'),
+(264, 'REQ20260718091941', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Standard', '09671739912', 10, '2026-07-18 02:49:41', 2, NULL, '2026-07-20 02:49:41'),
+(265, 'REQ20260718092050', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '123', 'Urgent', '09671739912', 10, '2026-07-18 02:50:50', 1, NULL, '2026-07-20 02:50:50'),
+(266, 'REQ20260718092203', 180, 'Kay Kay', 'A+', 'Grand Hospital, Yangon', 'Yangon', 'Thanlyin', '123', 'Urgent', '09671739912', 10, '2026-07-18 02:52:03', 2, NULL, '2026-07-20 02:52:03'),
+(267, 'REQ20260719235044', 180, 'Kay Kay', 'B+', 'Grand Hospital, Yangon', 'Yangon', 'North Okkalapa', '670,Kant Gaw st,Hta Ward', 'Urgent', '09671739912', 8, '2026-07-19 17:20:44', 2, 202, '2026-07-21 17:20:44'),
 (268, 'REQ20260720000659', 172, 'Dar Dar', 'B+', 'Grand Hospital', 'Yangon', 'North Okkalapa', '123', 'Standard', '09663237617', 7, '2026-07-19 17:36:59', 2, NULL),
 (269, 'REQ20260720012637', 205, 'Judy', 'A-', 'Grand Hospital, Yangon', 'Yangon', 'Hlaing', '123', 'Critical', '09671739912', 7, '2026-07-19 18:56:37', 2, NULL);
 
@@ -1084,7 +1085,8 @@ INSERT INTO `master_data` (`id`, `category`, `code`, `label`, `description`, `is
 (44, 'NOTIFICATION_TYPE', 'GENERAL', 'General', 'General system notification', 1, '2026-07-16 17:30:00'),
 (45, 'NOTIFICATION_TYPE', 'USER_ACTION', 'User Action', 'User registration or login activity', 1, '2026-07-16 17:30:00'),
 (46, 'NOTIFICATION_TYPE', 'ADMIN_ACTION', 'Admin Action', 'Administrative action notification', 1, '2026-07-16 17:30:00'),
-(47, 'REQUEST_STATUS', 'DECLINED', 'Declined', 'Donor declined the request', 1, '2026-07-22 00:00:00');
+(47, 'REQUEST_STATUS', 'DECLINED', 'Declined', 'Donor declined the request', 1, '2026-07-22 00:00:00'),
+(48, 'REQUEST_STATUS', 'EXPIRED', 'Expired', 'Request expired before a donor accepted', 1, '2026-08-06 00:00:00');
 
 -- --------------------------------------------------------
 

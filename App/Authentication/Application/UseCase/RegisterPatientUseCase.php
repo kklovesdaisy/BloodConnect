@@ -29,7 +29,7 @@ class RegisterPatientUseCase
 
         $passwordHash = password_hash($dto->password, PASSWORD_BCRYPT);
 
-        $this->emailService->sendOtp($dto->email, $otp);
+        $this->emailService->sendOtp($dto->email, $otp, $dto->username);
 
         return [
             'otp' => $otp,

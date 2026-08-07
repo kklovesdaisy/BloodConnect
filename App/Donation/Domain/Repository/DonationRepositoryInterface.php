@@ -8,4 +8,5 @@ interface DonationRepositoryInterface
     public function findByDonor(int $donorId): array;
     public function updateStatusByRequestId(int $requestId, int $status): bool;
     public function countSuccessfulDonations(?int $statusId = null): int;
+    public function findDonationForCertificate(int $requestId, int $donorId): ?array;
 }

@@ -53,6 +53,7 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
             br.urgency,
             br.contact_phone,
             br.created_at,
+            br.expiry_date,
             md.label AS status
 
         FROM blood_requests br
@@ -128,11 +129,12 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
                 br.urgency,
                 br.contact_phone,
                 br.created_at,
+                br.expiry_date,
                 br.donor_id,
                 br.status,
                 md.label AS status_name,
                 donor.user_id AS donor_user_id,
-                donor.username AS donor_name,
+                COALESCE(donor.username, CONCAT('Donor #', NULLIF(br.donor_id, 0))) AS donor_name,
                 donor.email AS donor_email,
                 donor.phone AS donor_phone,
                 donor.blood_group AS donor_blood_group,
@@ -175,6 +177,7 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
                 br.urgency,
                 br.contact_phone,
                 br.created_at,
+                br.expiry_date,
                 br.donor_id,
                 br.status,
                 md.label AS status_name,
@@ -215,6 +218,7 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
                 br.urgency,
                 br.contact_phone,
                 br.created_at,
+                br.expiry_date,
                 br.donor_id,
                 br.status,
                 md.label AS status_name,
@@ -256,7 +260,8 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
                 hospital_address,
                 urgency,
                 contact_phone,
-                status
+                status,
+                expiry_date
             )
 
             VALUES
@@ -272,7 +277,8 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
                 :hospital_address,
                 :urgency,
                 :contact_phone,
-                :status
+                :status,
+                :expiry_date
             )
         ";
 
@@ -291,7 +297,8 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
                 ':hospital_address' => $data['hospital_address'] ?? null,
                 ':urgency' => $data['urgency'],
                 ':contact_phone' => $data['contact_phone'],
-                ':status' => $data['status']
+                ':status' => $data['status'],
+                ':expiry_date' => $data['expiry_date'] ?? null
             ]);
         } catch (\PDOException $e) {
             if (str_contains($e->getMessage(), 'a foreign key constraint fails')) {
@@ -341,6 +348,50 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
 
 
 
+
+    // ================= EXPIRE OVERDUE REQUESTS =================
+
+    public function findOverdueRequests(): array
+    {
+        $pendingStatus = $this->masterRepo->getId('REQUEST_STATUS', 'PENDING') ?? 7;
+
+        $stmt = $this->db->prepare("
+            SELECT
+                br.request_id,
+                br.request_code,
+                br.patient_id,
+                br.patient_name,
+                br.blood_group_needed,
+                br.hospital_name,
+                br.urgency,
+                br.expiry_date,
+                u.email AS patient_email
+            FROM blood_requests br
+            JOIN users u ON u.user_id = br.patient_id
+            WHERE br.status = ?
+              AND br.expiry_date IS NOT NULL
+              AND br.expiry_date < NOW()
+        ");
+        $stmt->execute([$pendingStatus]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function expireOverdueRequests(): int
+    {
+        $expiredStatus = $this->masterRepo->getId('REQUEST_STATUS', 'EXPIRED') ?? 48;
+        $pendingStatus = $this->masterRepo->getId('REQUEST_STATUS', 'PENDING') ?? 7;
+
+        $stmt = $this->db->prepare("
+            UPDATE blood_requests
+            SET status = ?
+            WHERE status = ?
+              AND expiry_date IS NOT NULL
+              AND expiry_date < NOW()
+        ");
+        $stmt->execute([$expiredStatus, $pendingStatus]);
+        return $stmt->rowCount();
+    }
 
     // ================= FIND DONORS BY BLOOD GROUP AND LOCATION =================
 
@@ -652,6 +703,7 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
                 br.urgency,
                 br.contact_phone,
                 br.created_at,
+                br.expiry_date,
                 br.status,
                 md.label AS status_name";
 
@@ -672,6 +724,7 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
         $sql .= "
             WHERE br.blood_group_needed = :blood_group
               AND br.status = :status
+              AND (br.expiry_date IS NULL OR br.expiry_date > NOW())
             ORDER BY br.created_at DESC";
 
         $params = [
@@ -861,6 +914,7 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
             FROM blood_requests
             WHERE patient_id = ?
               AND status = 7
+              AND (expiry_date IS NULL OR expiry_date > NOW())
         ");
         $stmt->execute([$patientId]);
         return (int)$stmt->fetchColumn() > 0;
@@ -1018,6 +1072,7 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
                 br.urgency,
                 br.contact_phone,
                 br.created_at,
+                br.expiry_date,
                 br.donor_id,
                 br.status,
                 md.label AS status_name,
@@ -1130,7 +1185,7 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
 
         $stmt = $this->db->prepare("
             UPDATE blood_requests
-            SET status = ?, donor_id = NULL
+            SET status = ?, donor_id = NULL, expiry_date = DATE_ADD(NOW(), INTERVAL 2 DAY)
             WHERE request_id = ? AND patient_id = ? AND status = ?
         ");
         $stmt->execute([$pendingStatus, $requestId, $patientId, $declinedStatus]);
@@ -1144,7 +1199,7 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
 
         $stmt = $this->db->prepare("
             UPDATE blood_requests
-            SET status = ?, donor_id = NULL
+            SET status = ?, donor_id = NULL, expiry_date = DATE_ADD(NOW(), INTERVAL 2 DAY)
             WHERE request_id = ? AND status = ?
         ");
         $stmt->execute([$pendingStatus, $requestId, $declinedStatus]);
@@ -1168,6 +1223,7 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
                 br.urgency,
                 br.contact_phone,
                 br.created_at,
+                br.expiry_date,
                 br.donor_id,
                 br.status,
                 md.label AS status_name,

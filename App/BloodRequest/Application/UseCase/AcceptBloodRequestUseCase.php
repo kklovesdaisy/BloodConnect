@@ -11,6 +11,7 @@ use App\Notification\Domain\Repository\NotificationRepositoryInterface;
 use App\User\Domain\Repository\UserRepositoryInterface;
 use App\Shared\Infrastructure\Persistence\MasterDataRepository;
 use App\Shared\Infrastructure\Activity\ActivityLogger;
+use App\Shared\Infrastructure\Mail\EmailService;
 
 class AcceptBloodRequestUseCase
 {
@@ -23,11 +24,31 @@ class AcceptBloodRequestUseCase
         private UserRepositoryInterface $userRepo,
         private MasterDataRepository $masterRepo,
         private ActivityLogger $activityLogger,
-        private DonorEligibilityService $donorEligibilityService
+        private DonorEligibilityService $donorEligibilityService,
+        private EmailService $emailService
     ) {}
 
     public function execute(int $requestId, int $donorId): array
     {
+        $request = $this->bloodRequestRepo->findById($requestId);
+        if (!$request) {
+            return ['success' => false, 'error' => 'Blood request not found.'];
+        }
+
+        $expiredStatus = $this->masterRepo->getId('REQUEST_STATUS', 'EXPIRED') ?? 48;
+        $pendingStatus = $this->masterRepo->getId('REQUEST_STATUS', 'PENDING') ?? 7;
+
+        if ((int)($request['status'] ?? 0) === $expiredStatus) {
+            return ['success' => false, 'error' => 'This request has expired and can no longer be accepted.'];
+        }
+
+        if (!empty($request['expiry_date']) && strtotime((string)$request['expiry_date']) < time()) {
+            if ((int)($request['status'] ?? 0) === $pendingStatus) {
+                $this->bloodRequestRepo->expireOverdueRequests();
+            }
+            return ['success' => false, 'error' => 'This request has expired and can no longer be accepted.'];
+        }
+
         $donorProfile = $this->donorRepo->getDonorDetails($donorId);
         if ($donorProfile) {
             $profileEligibility = $this->donorEligibilityService->evaluate(
@@ -77,6 +98,9 @@ class AcceptBloodRequestUseCase
         $donor = $this->userRepo->findById($donorId);
         $patient = $this->userRepo->findById((int)($request['patient_id'] ?? 0));
 
+        $requestCode = (string)($request['request_code'] ?? 'N/A');
+        $donorName = (string)($donor['username'] ?? 'Unknown donor');
+
         $admins = $this->notificationRepo->getAdmins();
         foreach ($admins as $admin) {
             $this->notificationRepo->create(
@@ -84,11 +108,33 @@ class AcceptBloodRequestUseCase
                 'Blood Request Accepted',
                 sprintf(
                     'Blood request %s has been accepted by donor %s.',
-                    $request['request_code'] ?? 'N/A',
-                    $donor['username'] ?? 'Unknown donor'
+                    $requestCode,
+                    $donorName
                 ),
                 'REQUEST'
             );
+        }
+
+        $acceptedData = [
+            'patient_name'   => (string)($request['patient_name'] ?? 'A patient'),
+            'blood_group'    => $this->masterRepo->getLabel('BLOOD_GROUP', (string)($request['blood_group_needed'] ?? '')) ?? ($request['blood_group_needed'] ?? ''),
+            'hospital_name'  => (string)($request['hospital_name'] ?? 'the hospital'),
+            'request_code'   => $requestCode,
+        ];
+
+        $adminEmails = $this->userRepo->getAdminEmails();
+        foreach ($adminEmails as $admin) {
+            if (!empty($admin['email'])) {
+                $this->emailService->sendDonorAcceptedToAdmin($admin['email'], [
+                    'donor_name' => $donorName,
+                ] + $acceptedData);
+            }
+        }
+
+        if ($patient && !empty($patient['email'])) {
+            $this->emailService->sendDonorAcceptedToPatient($patient['email'], [
+                'donor_name' => $donorName,
+            ] + $acceptedData);
         }
 
         if ($donor) {
@@ -97,7 +143,7 @@ class AcceptBloodRequestUseCase
                 'Blood Request Accepted',
                 sprintf(
                     'You accepted blood request %s. The patient will be notified shortly.',
-                    $request['request_code'] ?? 'N/A'
+                    $requestCode
                 ),
                 'REQUEST'
             );
@@ -109,8 +155,8 @@ class AcceptBloodRequestUseCase
                 'Blood Request Accepted',
                 sprintf(
                     'Donor %s has accepted your blood request %s.',
-                    $donor['username'] ?? 'A donor',
-                    $request['request_code'] ?? 'N/A'
+                    $donorName,
+                    $requestCode
                 ),
                 'REQUEST'
             );
@@ -120,7 +166,7 @@ class AcceptBloodRequestUseCase
             $donorId,
             $donor['username'] ?? null,
             'REQUEST_ACCEPTED',
-            "Donor accepted blood request {$request['request_code']} (ID: {$requestId})"
+            "Donor accepted blood request {$requestCode} (ID: {$requestId})"
         );
 
         return ['success' => true];

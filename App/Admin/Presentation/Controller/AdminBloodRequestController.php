@@ -14,6 +14,7 @@ use App\Admin\Application\UseCase\FindMatchingDonorsUseCase;
 use App\Admin\Application\UseCase\AssignDonorsUseCase;
 use App\Admin\Application\UseCase\DeleteBloodRequestUseCase;
 use App\Admin\Application\UseCase\NotifyDonorsUseCase;
+use App\BloodRequest\Application\UseCase\ExpireOverdueRequestsUseCase;
 
 class AdminBloodRequestController
 {
@@ -29,11 +30,14 @@ class AdminBloodRequestController
         private FindMatchingDonorsUseCase $findMatchingUseCase,
         private AssignDonorsUseCase $assignUseCase,
         private DeleteBloodRequestUseCase $deleteUseCase,
-        private NotifyDonorsUseCase $notifyUseCase
+        private NotifyDonorsUseCase $notifyUseCase,
+        private ExpireOverdueRequestsUseCase $expireUseCase
     ) {}
 
     public function bloodRequests(): void
     {
+        $this->expireUseCase->execute();
+
         $db = \App\Shared\Infrastructure\Database\Database::getConnection();
         $stmt = $db->prepare("SELECT COUNT(*) FROM blood_requests WHERE status = 7");
         $stmt->execute();
@@ -70,8 +74,18 @@ class AdminBloodRequestController
         exit;
     }
 
+    public function donationHistory(): void
+    {
+        ob_start();
+        require __DIR__ . '/../View/donation_history.php';
+        $content = ob_get_clean();
+        require __DIR__ . '/../Layout/adminApp.php';
+    }
+
     public function viewBloodRequest(): void
     {
+        $this->expireUseCase->execute();
+
         $requestId = (int)($_GET['id'] ?? 0);
 
         if (!$requestId) {
@@ -99,6 +113,7 @@ class AdminBloodRequestController
         $isAccepted = $this->viewUseCase->isRequestAccepted($request);
         $isCancelledRequest = $this->viewUseCase->isRequestCancelled($request);
         $isDeclined = $this->viewUseCase->isRequestDeclined($request);
+        $isExpired = $this->viewUseCase->isRequestExpired($request);
 
         $matchingResult = $this->findMatchingUseCase->execute($requestId);
         $matchingTier = $matchingResult['tier'] ?? 'none';
@@ -164,6 +179,8 @@ class AdminBloodRequestController
 
     public function acceptBloodRequest(): void
     {
+        $this->expireUseCase->execute();
+
         $requestId = (int)($_POST['request_id'] ?? 0);
         $donorId = (int)($_POST['donor_id'] ?? 0);
 
@@ -187,6 +204,8 @@ class AdminBloodRequestController
 
     public function assignDonors(): void
     {
+        $this->expireUseCase->execute();
+
         $requestId = (int)($_POST['request_id'] ?? 0);
         $donorIds = $_POST['donor_ids'] ?? [];
 

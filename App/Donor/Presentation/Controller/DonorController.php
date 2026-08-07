@@ -8,6 +8,7 @@ use App\Shared\Presentation\View\View;
 use App\BloodRequest\Domain\Repository\BloodRequestRepositoryInterface;
 use App\BloodRequest\Application\UseCase\AcceptBloodRequestUseCase;
 use App\BloodRequest\Application\UseCase\DeclineBloodRequestUseCase;
+use App\BloodRequest\Application\UseCase\ExpireOverdueRequestsUseCase;
 use App\Donor\Domain\Repository\DonorRepositoryInterface;
 use App\Notification\Domain\Repository\NotificationRepositoryInterface;
 use App\User\Domain\Repository\UserRepositoryInterface;
@@ -19,6 +20,7 @@ use App\Donor\Application\UseCase\GetDonorDashboardUseCase;
 use App\Donor\Application\UseCase\GetDonationHistoryUseCase;
 use App\Donor\Application\UseCase\UpdateDonorProfileUseCase;
 use App\Donor\Application\UseCase\CompleteDonorProfileUseCase;
+use App\Donation\Application\UseCase\GenerateDonationCertificateUseCase;
 use App\Donor\Domain\Service\DonorEligibilityService;
 
 class DonorController
@@ -38,7 +40,9 @@ class DonorController
         private UpdateDonorProfileUseCase $updateDonorProfileUseCase,
         private CompleteDonorProfileUseCase $completeDonorProfileUseCase,
         private DonorEligibilityService $donorEligibilityService,
-        private GetDonorDashboardUseCase $dashboardUseCase
+        private GetDonorDashboardUseCase $dashboardUseCase,
+        private GenerateDonationCertificateUseCase $certificateUseCase,
+        private ExpireOverdueRequestsUseCase $expireUseCase
     ) {}
 
     private function authGuard()
@@ -49,6 +53,8 @@ class DonorController
             header('Location: /BloodConnect/public/login');
             exit;
         }
+
+        $this->expireUseCase->execute();
     }
 
     private function getUserId(): int
@@ -371,6 +377,62 @@ class DonorController
             'request' => $request,
             'donorDetails' => $donorDetails,
         ]);
+    }
+
+    public function viewDonationCertificate()
+    {
+        $this->authGuard();
+
+        $requestId = (int)($_GET['id'] ?? 0);
+
+        if (!$requestId) {
+            header('Location: /BloodConnect/public/donor/history');
+            exit;
+        }
+
+        $donation = $this->donationRepo->findDonationForCertificate($requestId, $this->getUserId());
+
+        if (empty($donation)) {
+            Session::set('flash_message', 'No completed donation record found for this request.');
+            Session::set('flash_status', 'error');
+            header('Location: /BloodConnect/public/donor/history/view?id=' . $requestId);
+            exit;
+        }
+
+        $donation['certificate_number'] = 'BC-' . str_pad((string)(int)($donation['donation_id'] ?? 0), 6, '0', STR_PAD_LEFT);
+
+        $this->renderDonorView('donor_certificate', [
+            'user' => Session::get('user'),
+            'donation' => $donation,
+            'request_id' => $requestId,
+        ]);
+    }
+
+    public function downloadDonationCertificate()
+    {
+        $this->authGuard();
+
+        $requestId = (int)($_GET['id'] ?? 0);
+
+        if (!$requestId) {
+            header('Location: /BloodConnect/public/donor/history');
+            exit;
+        }
+
+        $result = $this->certificateUseCase->execute($requestId, $this->getUserId());
+
+        if (empty($result['success'])) {
+            Session::set('flash_message', $result['error'] ?? 'Certificate could not be generated.');
+            Session::set('flash_status', 'error');
+            header('Location: /BloodConnect/public/donor/history/view?id=' . $requestId);
+            exit;
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+        header('Content-Length: ' . strlen($result['pdf']));
+        echo $result['pdf'];
+        exit;
     }
 
     public function updateProfilePage()

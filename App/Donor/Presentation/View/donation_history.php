@@ -109,7 +109,11 @@ $historyCount = count($requests);
                             </span>
                         </div>
 
-                        <div class="col-span-2 flex items-center justify-end pr-2">
+                        <div class="col-span-2 flex items-center justify-end gap-2 pr-2">
+                            <a href="/BloodConnect/public/donor/donation/certificate/view?id=<?= (int)$rid ?>"
+                                class="px-4 py-2 text-xs font-bold border border-red-200 text-red-600 hover:bg-red-50 rounded-xl transition-all active:scale-95 shadow-3xs">
+                                Certificate
+                            </a>
                             <a href="/BloodConnect/public/donor/history/view?id=<?= (int)$rid ?>"
                                 class="px-4 py-2 text-xs font-bold bg-red-600 border border-red-600 text-white hover:bg-red-700 rounded-xl transition-all active:scale-95 shadow-3xs">
                                 Inspect Logs
@@ -147,7 +151,11 @@ $historyCount = count($requests);
                             </div>
                         </div>
 
-                        <div class="pt-1">
+                        <div class="pt-1 flex flex-col gap-2">
+                            <a href="/BloodConnect/public/donor/donation/certificate/view?id=<?= (int)$rid ?>"
+                                class="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-3xs w-full">
+                                <i class="fa-solid fa-award"></i> View Certificate
+                            </a>
                             <a href="/BloodConnect/public/donor/history/view?id=<?= (int)$rid ?>"
                                 class="flex items-center justify-center gap-2 py-2.5 px-4 bg-red-600 border border-red-600 text-white hover:bg-red-700 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-3xs w-full">
                                 Inspect Full Ticket History

@@ -20,62 +20,116 @@
     <div class="relative z-10 max-w-[1440px] mx-auto w-full px-6 md:px-12">
 
         <!-- HERO SEGMENT GRID -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center min-h-[550px] mb-20">
+        <div class="relative overflow-hidden rounded-[2rem] bg-white border border-red-50 shadow-xl shadow-red-100/40 mb-16">
 
-            <!-- Left Grid: Brand Typography Catchphrase -->
-            <div class="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left space-y-6">
-                <span class="inline-flex items-center gap-2 bg-red-50 text-red-600 px-4 py-1.5 rounded-full text-sm font-bold tracking-wide uppercase border border-red-100 animate-bounce">
-                    <i class="fa-solid fa-heart-pulse"></i> Every Drop Matters
-                </span>
+            <!-- Light Gradient Blobs -->
+            <div class="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-red-100 to-rose-50 rounded-full blur-3xl pointer-events-none opacity-70"></div>
+            <div class="absolute -bottom-28 -left-20 w-80 h-80 bg-red-50 rounded-full blur-3xl pointer-events-none"></div>
 
-                <h1 class="font-black text-4xl md:text-6xl text-gray-900 tracking-tight leading-none">
-                    Connecting Donors.<br>
-                    <span class="text-red-600 relative inline-block mt-2">
-                        Saving Lives.
-                        <span class="absolute bottom-1 left-0 w-full h-2 bg-red-100 -z-10 rounded-full"></span>
+            <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center px-6 md:px-12 py-12 lg:py-16">
+
+                <!-- Left Grid: Copy -->
+                <div class="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left space-y-6">
+                    <span class="inline-flex items-center gap-2 bg-red-50 text-red-600 border border-red-100 px-4 py-1.5 rounded-full text-sm font-bold tracking-wide uppercase shadow-sm">
+                        <i class="fa-solid fa-code"></i> BloodConnect API
                     </span>
-                </h1>
 
-                <p class="text-base md:text-xl text-gray-500 font-medium max-w-xl leading-relaxed">
-                    BloodConnect is a secure and reliable platform that connects blood donors with patients, making it easier to find life-saving blood when it is needed most.
-                </p>
+                    <h1 class="font-black text-4xl md:text-6xl text-gray-900 tracking-tight leading-tight">
+                        Boost Your<br>
+                        <span class="text-red-600">Life-Saving</span> Impact.
+                    </h1>
 
-                <!-- Call to Action Buttons with Hover Pop Effects -->
-                <div class="flex flex-col sm:flex-row gap-4 pt-4 w-full sm:w-auto">
-                    <a href="<?= $basePath ?>/search" class="group bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-xl text-lg shadow-lg shadow-red-600/20 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 transform hover:-translate-y-0.5">
-                        <span>Find Blood Requests</span>
-                        <i class="fa-solid fa-arrow-right text-sm transform group-hover:translate-x-1 transition-transform"></i>
-                    </a>
-                    <a href="<?= $basePath ?>/register?role=donor" class="bg-white border border-gray-300 hover:border-gray-400 text-gray-800 font-bold py-4 px-8 rounded-xl text-lg shadow-sm hover:shadow-md active:scale-[0.99] transition-all duration-200 text-center transform hover:-translate-y-0.5">
-                        Become a Donor
-                    </a>
+                    <p class="text-base md:text-xl text-gray-500 font-medium max-w-xl leading-relaxed">
+                        BloodConnect is a secure and reliable platform that connects blood donors with patients, making it easier to find life-saving blood when it is needed most.
+                    </p>
+
                 </div>
+
+                <!-- Right Grid: Code Editor Mockup -->
+                <div class="lg:col-span-5 relative flex justify-center w-full">
+                    <div class="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-2xl shadow-red-100/60 overflow-hidden">
+                        <!-- Window Chrome -->
+                        <div class="flex items-center gap-2 bg-gray-100 border-b border-gray-200 px-4 py-3">
+                            <span class="w-3 h-3 rounded-full bg-red-400"></span>
+                            <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                            <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                            <span class="ml-3 text-xs font-semibold text-gray-500 font-mono">BloodRequestController.php</span>
+                        </div>
+                        <!-- Code Body -->
+                        <div class="bg-gray-50 p-5 font-mono text-[13px] leading-[1.9] text-left overflow-x-auto">
+                            <pre class="m-0 whitespace-pre text-gray-800"><span class="bc-line" style="animation-delay:.3s"><span class="text-purple-600">class</span> <span class="text-red-600">BloodRequestController</span> {
+</span><span class="bc-line" style="animation-delay:.9s">    <span class="text-purple-600">public function</span> matchDonor() {
+</span><span class="bc-line" style="animation-delay:1.5s">        $donor = <span class="text-sky-600">$this-&gt;findNearest</span>(
+</span><span class="bc-line" style="animation-delay:2.1s">            blood: <span class="text-emerald-700">'O+'</span>,
+</span><span class="bc-line" style="animation-delay:2.7s">            radius: <span class="text-sky-700">'5km'</span>
+</span><span class="bc-line" style="animation-delay:3.3s">        );
+</span><span class="bc-line" style="animation-delay:3.9s">        <span class="text-gray-400">// Donor found!</span>
+</span><span class="bc-line" style="animation-delay:4.5s">        <span class="text-purple-600">return</span> $donor;  <span class="text-gray-400">// ~12 min</span>
+</span><span class="bc-line" style="animation-delay:5.1s">    }
+</span><span class="bc-line" style="animation-delay:5.7s">}<span class="bc-cursor">|</span></span></pre>
+                        </div>
+                    </div>
+
+                    <!-- Floating Donation Counter Badge -->
+                    <div class="bc-badge-glow absolute -top-4 -right-3 md:-right-5 bg-white rounded-full px-4 py-2 shadow-lg border border-red-100 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-xs font-black text-gray-800"><span class="counter-value" data-target="<?= $successful_donations ?>">0</span>+ Donations</span>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Right Grid: Modern Hero Interactive Visual Asset -->
-            <div class="lg:col-span-5 flex justify-center lg:justify-end w-full relative">
-                <!-- Outer floating ring container -->
-                <div class="relative w-72 h-72 md:w-96 md:h-96 bg-gradient-to-tr from-red-50/80 to-white rounded-3xl p-8 flex items-center justify-center shadow-xl shadow-gray-200/40 border border-white transform transition duration-500 hover:rotate-2">
-                    <svg viewBox="0 0 240 260" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto drop-shadow-xl max-w-[240px] animate-pulse duration-[3000ms]">
-                        <path d="M120,30 C150,68 178,112 178,140 C178,170 152,192 120,192 C88,192 62,170 62,140 C62,112 90,68 120,30 Z" fill="#C8102E" />
-                        <rect x="110" y="108" width="20" height="74" rx="7" fill="#FFFFFF" />
-                        <rect x="83" y="135" width="74" height="20" rx="7" fill="#FFFFFF" />
-                    </svg>
-
-                    <!-- Decorative Floating Badge - Live Donation Counter -->
-                    <div class="absolute -bottom-4 -left-4 bg-white border border-gray-150 rounded-2xl p-4 shadow-lg flex items-center gap-3 transform animate-bounce duration-[4000ms]">
-                        <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                            <i class="fa-solid fa-droplet"></i>
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-400 font-bold uppercase tracking-wider">Lives Impacted</p>
-                            <p class="text-sm font-black text-gray-800"><span class="counter-value" data-target="<?= $successful_donations ?>">0</span>+ Donations</p>
-                        </div>
+            <!-- Blood Type Marquee -->
+            <div class="relative border-t border-gray-100 bg-white/60 py-3.5 overflow-hidden">
+                <div class="flex w-max whitespace-nowrap" style="animation: bc-marquee 24s linear infinite;">
+                    <div class="flex items-center gap-10 pr-10 text-sm font-black text-red-600 tracking-widest uppercase">
+                        <span>A+</span><span>B+</span><span>AB+</span><span>O+</span><span>A-</span><span>B-</span><span>AB-</span><span>O-</span>
+                    </div>
+                    <div class="flex items-center gap-10 pr-10 text-sm font-black text-red-600 tracking-widest uppercase" aria-hidden="true">
+                        <span>A+</span><span>B+</span><span>AB+</span><span>O+</span><span>A-</span><span>B-</span><span>AB-</span><span>O-</span>
                     </div>
                 </div>
             </div>
-
         </div>
+
+        <style>
+            @keyframes bc-marquee {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
+            }
+            .bc-line {
+                display: inline;
+                opacity: 0;
+                animation: bc-line-in .5s ease-out forwards;
+            }
+            @keyframes bc-line-in {
+                from { opacity: 0; transform: translateY(6px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .bc-cursor {
+                display: inline-block;
+                color: #dc2626;
+                font-weight: bold;
+                animation: bc-blink 1s steps(2) infinite;
+            }
+            @keyframes bc-blink {
+                0%, 50% { opacity: 1; }
+                51%, 100% { opacity: 0; }
+            }
+            .bc-badge-glow {
+                animation: bc-glow 2.2s ease-in-out infinite;
+            }
+            @keyframes bc-glow {
+                0%, 100% {
+                    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.18);
+                    transform: scale(1);
+                }
+                50% {
+                    box-shadow: 0 4px 22px rgba(220, 38, 38, 0.55);
+                    transform: scale(1.06);
+                }
+            }
+        </style>
 
         <!-- STATISTICS COUNTER ROW -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16 relative z-10">

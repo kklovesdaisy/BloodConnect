@@ -30,4 +30,21 @@ class MasterDataRepository
 
         return $row ? (int)$row['id'] : null;
     }
+
+    public function getLabel(string $category, string $code): ?string
+    {
+        $stmt = $this->db->prepare("
+            SELECT label
+            FROM master_data
+            WHERE category = ?
+              AND code = ?
+            LIMIT 1
+        ");
+
+        $stmt->execute([$category, strtoupper($code)]);
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row ? (string)$row['label'] : null;
+    }
 }

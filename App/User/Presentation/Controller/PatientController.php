@@ -6,6 +6,8 @@ use App\Shared\Helpers\Session;
 use App\Shared\Presentation\View\View;
 use App\BloodRequest\Domain\Repository\BloodRequestRepositoryInterface;
 use App\BloodRequest\Application\UseCase\CancelBloodRequestUseCase;
+use App\BloodRequest\Application\UseCase\GenerateRequestReceiptUseCase;
+use App\BloodRequest\Application\UseCase\ExpireOverdueRequestsUseCase;
 use App\Notification\Domain\Repository\NotificationRepositoryInterface;
 use App\Notification\Application\UseCase\SendProfileUpdateNotificationUseCase;
 use App\User\Domain\Repository\UserRepositoryInterface;
@@ -20,7 +22,9 @@ class PatientController
         private UserRepositoryInterface $userRepo,
         private MasterDataRepository $masterRepo,
         private CancelBloodRequestUseCase $cancelUseCase,
-        private SendProfileUpdateNotificationUseCase $profileUpdateNotifUseCase
+        private SendProfileUpdateNotificationUseCase $profileUpdateNotifUseCase,
+        private GenerateRequestReceiptUseCase $receiptUseCase,
+        private ExpireOverdueRequestsUseCase $expireUseCase
     ) {}
 
     private function getUserId(): int
@@ -41,6 +45,8 @@ class PatientController
             header('Location: /BloodConnect/public/login');
             exit;
         }
+
+        $this->expireUseCase->execute();
     }
 
     private function isCancelledRequest(array $request): bool
@@ -184,6 +190,33 @@ class PatientController
             'request'     => $request,
             'unreadCount' => $this->getUnreadCount()
         ]);
+    }
+
+    public function downloadRequestReceipt()
+    {
+        $this->authGuard();
+
+        $requestId = (int)($_GET['id'] ?? 0);
+
+        if (!$requestId) {
+            header('Location: /BloodConnect/public/patient/my-requests');
+            exit;
+        }
+
+        $result = $this->receiptUseCase->execute($requestId, $this->getUserId());
+
+        if (empty($result['success'])) {
+            Session::set('flash_message', $result['error'] ?? 'Receipt could not be generated.');
+            Session::set('flash_status', 'error');
+            header('Location: /BloodConnect/public/patient/my-request/view?id=' . $requestId);
+            exit;
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+        header('Content-Length: ' . strlen($result['pdf']));
+        echo $result['pdf'];
+        exit;
     }
 
     public function profile()

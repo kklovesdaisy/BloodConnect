@@ -9,6 +9,7 @@ use App\Donor\Domain\Service\DonorEligibilityService;
 use App\Notification\Domain\Repository\NotificationRepositoryInterface;
 use App\User\Domain\Repository\UserRepositoryInterface;
 use App\Shared\Infrastructure\Persistence\MasterDataRepository;
+use App\Shared\Infrastructure\Mail\EmailService;
 
 class AssignDonorsUseCase
 {
@@ -19,7 +20,8 @@ class AssignDonorsUseCase
         private MasterDataRepository $masterRepo,
         private DonorRepositoryInterface $donorRepo,
         private RequestPrioritizationService $prioritizationService,
-        private DonorEligibilityService $donorEligibilityService
+        private DonorEligibilityService $donorEligibilityService,
+        private EmailService $emailService
     ) {}
 
     public function execute(int $requestId, array $donorIds): array
@@ -32,6 +34,11 @@ class AssignDonorsUseCase
 
         if (!$request) {
             return ['success' => false, 'error' => 'Blood request not found.'];
+        }
+
+        $expiredStatus = $this->masterRepo->getId('REQUEST_STATUS', 'EXPIRED') ?? 48;
+        if ((int)($request['status'] ?? 0) === $expiredStatus) {
+            return ['success' => false, 'error' => 'This request has expired and can no longer be assigned.'];
         }
 
         $validDonorIds = [];
@@ -166,6 +173,15 @@ class AssignDonorsUseCase
         $patientName = (string)($request['patient_name'] ?? 'A patient');
         $bloodGroup = (string)($request['blood_group_needed'] ?? '');
 
+        $bloodGroupLabel = $this->masterRepo->getLabel('BLOOD_GROUP', $bloodGroup) ?? $bloodGroup;
+        $assignmentData = [
+            'patient_name'   => $patientName,
+            'blood_group'    => $bloodGroupLabel,
+            'hospital_name'  => (string)($request['hospital_name'] ?? 'the hospital'),
+            'urgency'        => (string)($request['urgency'] ?? 'ROUTINE'),
+            'request_code'   => $requestCode,
+        ];
+
         foreach ($finalDonorIds as $donorId) {
             $donor = $this->userRepo->findById((int)$donorId);
             if ($donor) {
@@ -180,6 +196,12 @@ class AssignDonorsUseCase
                     ),
                     'REQUEST'
                 );
+
+                if (!empty($donor['email'])) {
+                    $this->emailService->sendDonorAssignedToDonor($donor['email'], [
+                        'donor_name'   => (string)($donor['username'] ?? 'Donor'),
+                    ] + $assignmentData);
+                }
             }
         }
 
@@ -208,6 +230,10 @@ class AssignDonorsUseCase
                 ),
                 'REQUEST'
             );
+
+            if (!empty($patient['email'])) {
+                $this->emailService->sendDonorAssignedToPatient($patient['email'], $assignmentData);
+            }
         }
 
         $admins = $this->notificationRepo->getAdmins();

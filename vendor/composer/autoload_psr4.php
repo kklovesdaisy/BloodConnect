@@ -6,6 +6,10 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Masterminds\\' => array($baseDir . '/vendor/masterminds/html5/src'),
+    'FontLib\\' => array($baseDir . '/vendor/dompdf/php-font-lib/src/FontLib'),
+    'Dompdf\\' => array($baseDir . '/vendor/dompdf/dompdf/src'),
+    'Svg\\' => array($baseDir . '/vendor/dompdf/php-svg-lib/src/Svg'),
     'Routes\\' => array($baseDir . '/routes'),
     'App\\' => array($baseDir . '/App'),
 );
