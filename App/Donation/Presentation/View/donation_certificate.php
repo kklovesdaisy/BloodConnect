@@ -11,6 +11,7 @@ $donationDate  = !empty($donation['donation_date'])
 $hospital      = htmlspecialchars((string)($donation['hospital_name'] ?? ''));
 $requestCode   = htmlspecialchars((string)($donation['request_code'] ?? ''));
 $certNumber    = htmlspecialchars((string)($donation['certificate_number'] ?? 'BC-000000'));
+$bags          = max(1, (int)($donation['bags'] ?? 1));
 
 $generatedAt = date('d-M-Y h:i A');
 ?>
@@ -213,12 +214,16 @@ $generatedAt = date('d-M-Y h:i A');
                         <td class="value"><span class="blood"><?= $bloodGroup !== '' ? $bloodGroup : '&mdash;' ?></span></td>
                     </tr>
                     <tr>
+                        <td class="label">Bags Donated</td>
+                        <td class="value"><?= $bags ?> bag<?= $bags > 1 ? 's' : '' ?></td>
+                    </tr>
+                    <tr>
                         <td class="label">Donation Date</td>
                         <td class="value"><?= $donationDate ?></td>
                     </tr>
                     <tr>
-                        <td class="label">Donation Hospital</td>
-                        <td class="value"><?= $hospital !== '' ? $hospital : '&mdash;' ?></td>
+                        <td class="label">Donation Facility</td>
+                        <td class="value"><?= $hospital !== '' ? $hospital : 'Central Stock' ?></td>
                     </tr>
                     <?php if ($requestCode !== ''): ?>
                     <tr>

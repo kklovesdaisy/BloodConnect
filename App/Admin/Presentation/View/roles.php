@@ -48,7 +48,7 @@ $maxPerms = max(1, max(array_map(fn($r) => (int)($r['total_permissions'] ?? 0), 
     }
 </style>
 
-<div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen transition-all opacity-0 translate-y-6 ease-out duration-700" id="rolesContainer">
+<div class="min-h-screen transition-all opacity-0 translate-y-6 ease-out duration-700" id="rolesContainer">
 
     <!-- GLASS CORE HEADER -->
     <div class="relative bg-white border border-slate-200/60 rounded-2xl p-6 mb-8 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-6">
@@ -82,7 +82,7 @@ $maxPerms = max(1, max(array_map(fn($r) => (int)($r['total_permissions'] ?? 0), 
         </div>
     <?php else: ?>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <?php foreach ($roles as $index => $role): ?>
                 <?php
                 $roleName = strtolower($role['name'] ?? '');

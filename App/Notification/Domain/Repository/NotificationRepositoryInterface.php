@@ -10,4 +10,9 @@ interface NotificationRepositoryInterface
     public function markAllAsRead(int $userId): bool;
     public function getUnreadCount(int $userId): int;
     public function getAdmins(): array;
+
+    /**
+     * Send a notification to every admin user, optionally excluding one user.
+     */
+    public function notifyAdmins(string $title, string $message, string $type, ?int $exceptUserId = null): void;
 }

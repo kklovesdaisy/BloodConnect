@@ -12,7 +12,7 @@ $user = $user ?? ($data['user'] ?? [
   MAIN CONTENT WRAPPER:
   Matches the layout container properties of your User Management view.
 -->
-<div class="max-w-7xl mx-auto p-6 bg-[#faf8f8] opacity-0 translate-y-1 transition-all duration-300 ease-out" id="editUserCardWrapper">
+<div class="bg-[#faf8f8] opacity-0 translate-y-1 transition-all duration-300 ease-out" id="editUserCardWrapper">
 
     <!-- HEADER BLOCK -->
     <div class="mb-6">

@@ -148,7 +148,7 @@ $pageTitle = match ($filter) {
 </style>
 
 <!-- MAIN APP VIEW PORTWRAPPER -->
-<div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen transition-all opacity-0 translate-y-6 ease-out duration-700" id="userManagementContainer">
+<div class="min-h-screen transition-all opacity-0 translate-y-6 ease-out duration-700" id="userManagementContainer">
 
     <!-- FUTURISTIC GLASS CORE HEADER -->
     <div class="relative bg-white border border-slate-200/60 rounded-2xl p-6 mb-8 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-6">

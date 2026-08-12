@@ -182,4 +182,15 @@ class NotificationRepository implements \App\Notification\Domain\Repository\Noti
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function notifyAdmins(string $title, string $message, string $type, ?int $exceptUserId = null): void
+    {
+        foreach ($this->getAdmins() as $admin) {
+            if ($exceptUserId !== null && (int)$admin['user_id'] === $exceptUserId) {
+                continue;
+            }
+
+            $this->create((int)$admin['user_id'], $title, $message, $type);
+        }
+    }
 }

@@ -84,10 +84,11 @@ class PatientController
         $allRequests = $this->bloodRequestRepo->findByPatientId($patientId);
 
         return View::render('User', 'patient_dashboard', [
-            'username'    => Session::get('username'),
-            'requests'    => array_slice($allRequests, 0, 6),
-            'metrics'     => $this->bloodRequestRepo->getPatientStats($patientId),
-            'unreadCount' => $this->getUnreadCount()
+            'username'            => Session::get('username'),
+            'requests'            => array_slice($allRequests, 0, 6),
+            'metrics'             => $this->bloodRequestRepo->getPatientStats($patientId),
+            'unreadCount'         => $this->getUnreadCount(),
+            'recent_notifications'=> array_slice($this->notificationRepo->findByUserId($patientId), 0, 3),
         ]);
     }
 

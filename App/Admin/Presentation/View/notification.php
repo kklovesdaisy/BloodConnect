@@ -41,7 +41,7 @@
     }
 </style>
 
-<div class="max-w-7xl mx-auto w-full px-4 sm:px-8 lg:px-12 py-6 lg:py-10 space-y-6 select-none flex flex-col justify-center">
+<div class="w-full py-6 lg:py-10 space-y-6 select-none flex flex-col justify-center">
 
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-6">
         <div>

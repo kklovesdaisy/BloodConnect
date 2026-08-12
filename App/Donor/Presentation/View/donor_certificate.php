@@ -1,6 +1,6 @@
 <?php
 $donation = $donation ?? [];
-$requestId = (int)($request_id ?? 0);
+$donationId = (int)($donation_id ?? $donation['donation_id'] ?? 0);
 
 $donorName = htmlspecialchars((string)($donation['donor_name'] ?? ''));
 $donorEmail = htmlspecialchars((string)($donation['donor_email'] ?? ''));
@@ -11,6 +11,7 @@ $donationDate = !empty($donation['donation_date'])
 $hospital = htmlspecialchars((string)($donation['hospital_name'] ?? ''));
 $requestCode = htmlspecialchars((string)($donation['request_code'] ?? ''));
 $certNumber = htmlspecialchars((string)($donation['certificate_number'] ?? 'BC-000000'));
+$bags = max(1, (int)($donation['bags'] ?? 1));
 $logoUrl = '/BloodConnect/public/images/bloodconnect-logo.png';
 ?>
 
@@ -28,11 +29,11 @@ $logoUrl = '/BloodConnect/public/images/bloodconnect-logo.png';
         </div>
 
         <div class="flex items-center gap-2 self-start sm:self-auto">
-            <a href="/BloodConnect/public/donor/donation/certificate?id=<?= $requestId ?>"
+            <a href="/BloodConnect/public/donor/donation/certificate?id=<?= $donationId ?>"
                 class="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-red-700 shadow-sm transition-all active:scale-95">
                 <i class="fa-solid fa-download"></i> Download PDF
             </a>
-            <a href="/BloodConnect/public/donor/history/view?id=<?= $requestId ?>" class="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-3xs transition-all active:scale-95">
+            <a href="/BloodConnect/public/donor/history" class="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-3xs transition-all active:scale-95">
                 <i class="fa-solid fa-arrow-left"></i> Back
             </a>
         </div>
@@ -72,12 +73,16 @@ $logoUrl = '/BloodConnect/public/images/bloodconnect-logo.png';
                         <span class="font-black text-xl text-[#ce2424] tracking-wider"><?= $bloodGroup !== '' ? $bloodGroup : '&mdash;' ?></span>
                     </div>
                     <div class="rounded-xl border border-slate-200/80 bg-white/80 p-3.5 flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bags Donated</span>
+                        <span class="font-bold text-slate-800"><?= $bags ?> bag<?= $bags > 1 ? 's' : '' ?></span>
+                    </div>
+                    <div class="rounded-xl border border-slate-200/80 bg-white/80 p-3.5 flex items-center justify-between gap-2">
                         <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Donation Date</span>
                         <span class="font-bold text-slate-800"><?= $donationDate ?></span>
                     </div>
-                    <div class="rounded-xl border border-slate-200/80 bg-white/80 p-3.5 flex items-center justify-between gap-2 sm:col-span-2">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Donation Hospital</span>
-                        <span class="font-bold text-slate-800 text-right"><?= $hospital !== '' ? $hospital : '&mdash;' ?></span>
+                    <div class="rounded-xl border border-slate-200/80 bg-white/80 p-3.5 flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Donation Facility</span>
+                        <span class="font-bold text-slate-800 text-right"><?= $hospital !== '' ? $hospital : 'Central Stock' ?></span>
                     </div>
                     <?php if ($requestCode !== ''): ?>
                     <div class="rounded-xl border border-slate-200/80 bg-white/80 p-3.5 flex items-center justify-between gap-2 sm:col-span-2">

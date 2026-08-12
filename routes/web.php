@@ -14,7 +14,9 @@ use App\Admin\Presentation\Controller\AdminDonorController;
 use App\Admin\Presentation\Controller\AdminRoleController;
 use App\Admin\Presentation\Controller\AdminReportController;
 use App\Admin\Presentation\Controller\AdminBloodStockController;
+use App\Admin\Presentation\Controller\AdminHospitalController;
 use App\Donor\Presentation\Controller\DonorController;
+use App\Hospital\Presentation\Controller\HospitalController;
 use App\Authentication\Presentation\Controller\GoogleAuthController;
 
 $router = new Router();
@@ -28,6 +30,7 @@ $router->aliasMiddleware('auth', \App\Shared\Middleware\AuthMiddleware::class);
 $router->aliasMiddleware('admin', \App\Shared\Middleware\AdminMiddleware::class);
 $router->aliasMiddleware('donor', \App\Shared\Middleware\DonorMiddleware::class);
 $router->aliasMiddleware('patient', \App\Shared\Middleware\PatientMiddleware::class);
+$router->aliasMiddleware('hospital', \App\Shared\Middleware\HospitalMiddleware::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -180,6 +183,24 @@ $router->group(['middleware' => ['auth', 'admin', 'can:donor.view']], function (
     $router->get('/admin/donor-management', [AdminDonorController::class, 'donorManagement']);
 });
 
+// Hospital management
+$router->group(['middleware' => ['auth', 'admin', 'can:hospital.view']], function (Router $router) {
+    $router->get('/admin/hospitals', [AdminHospitalController::class, 'index']);
+});
+$router->group(['middleware' => ['auth', 'admin', 'can:hospital.create']], function (Router $router) {
+    $router->get('/admin/hospitals/create', [AdminHospitalController::class, 'create']);
+    $router->post('/admin/hospitals/create', [AdminHospitalController::class, 'store']);
+});
+
+// Hospital blood stock requests (admin overview)
+$router->group(['middleware' => ['auth', 'admin', 'can:hospital_request.view']], function (Router $router) {
+    $router->get('/admin/hospital-requests', [AdminHospitalController::class, 'hospitalRequests']);
+    $router->post('/admin/hospital-requests/accept', [AdminHospitalController::class, 'acceptRequest']);
+    $router->post('/admin/hospital-requests/decline', [AdminHospitalController::class, 'declineRequest']);
+    $router->post('/admin/hospital-requests/provide-more', [AdminHospitalController::class, 'provideMore']);
+    $router->get('/admin/pending-hospital-requests-count', [AdminHospitalController::class, 'pendingHospitalRequestsCount']);
+});
+
 // Blood requests
 $router->group(['middleware' => ['auth', 'admin', 'can:blood_request.view_matching']], function (Router $router) {
     $router->get('/admin/blood-requests', [AdminBloodRequestController::class, 'bloodRequests']);
@@ -195,7 +216,7 @@ $router->group(['middleware' => ['auth', 'admin', 'can:blood_request.view_matchi
 
     // Blood stock management
     $router->get('/admin/blood-stock', [AdminBloodStockController::class, 'index']);
-    $router->post('/admin/blood-stock/adjust', [AdminBloodStockController::class, 'adjust']);
+    $router->post('/admin/blood-stock/dispose-expired', [AdminBloodStockController::class, 'disposeExpired']);
 });
 
 // Roles & permissions
@@ -251,11 +272,48 @@ $router->group(['middleware' => ['auth', 'donor']], function (Router $router) {
     $router->middleware(['can:notification.view'], function (Router $router) {
         $router->get('/donor/notifications', [DonorController::class, 'notifications']);
     });
+    $router->middleware(['can:donation.create'], function (Router $router) {
+        $router->get('/donor/donate', [DonorController::class, 'donatePage']);
+        $router->post('/donor/donate', [DonorController::class, 'storeDonation']);
+    });
+
     $router->middleware(['can:blood_request.accept'], function (Router $router) {
         $router->post('/donor/request/accept', [DonorController::class, 'acceptRequest']);
     });
     $router->middleware(['can:blood_request.decline'], function (Router $router) {
         $router->post('/donor/request/decline', [DonorController::class, 'declineRequest']);
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| HOSPITAL ROUTES (auth + hospital + RBAC permission)
+|--------------------------------------------------------------------------
+*/
+$router->group(['middleware' => ['auth', 'hospital']], function (Router $router) {
+    $router->middleware(['can:dashboard.view'], function (Router $router) {
+        $router->get('/hospital/dashboard', [HospitalController::class, 'dashboard']);
+    });
+    $router->middleware(['can:blood_stock.view'], function (Router $router) {
+        $router->get('/hospital/stock', [HospitalController::class, 'bloodStock']);
+    });
+    $router->middleware(['can:hospital_request.view'], function (Router $router) {
+        $router->get('/hospital/requests', [HospitalController::class, 'requests']);
+        $router->get('/hospital/requests/pending', [HospitalController::class, 'pending']);
+    });
+    $router->middleware(['can:hospital_request.create'], function (Router $router) {
+        $router->get('/hospital/requests/create', [HospitalController::class, 'createRequestPage']);
+        $router->post('/hospital/requests/create', [HospitalController::class, 'storeRequest']);
+    });
+    $router->middleware(['can:profile.view'], function (Router $router) {
+        $router->get('/hospital/profile', [HospitalController::class, 'profile']);
+        $router->get('/hospital/profile/update', [HospitalController::class, 'updateProfilePage']);
+    });
+    $router->middleware(['can:profile.update'], function (Router $router) {
+        $router->post('/hospital/profile/update', [HospitalController::class, 'updateProfile']);
+    });
+    $router->middleware(['can:notification.view'], function (Router $router) {
+        $router->get('/hospital/notifications', [HospitalController::class, 'notifications']);
     });
 });
 

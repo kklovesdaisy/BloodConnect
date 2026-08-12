@@ -11,6 +11,18 @@ namespace App\BloodStock\Domain\Entity;
  */
 class BloodStock
 {
+    /**
+     * Blood bags are normally usable for 42 days after collection, after
+     * which they expire and must be disposed of.
+     */
+    public const SHELF_LIFE_DAYS = 42;
+
+    /**
+     * Bags whose expiry date is within this many days are flagged as
+     * "expiring soon" on the admin inventory page.
+     */
+    public const EXPIRY_WARNING_DAYS = 7;
+
     private static array $codeToLabel = [
         'A_POS' => 'A+', 'A_NEG' => 'A-',
         'B_POS' => 'B+', 'B_NEG' => 'B-',

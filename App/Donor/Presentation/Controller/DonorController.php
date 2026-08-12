@@ -20,6 +20,7 @@ use App\Donor\Application\UseCase\GetDonorDashboardUseCase;
 use App\Donor\Application\UseCase\GetDonationHistoryUseCase;
 use App\Donor\Application\UseCase\UpdateDonorProfileUseCase;
 use App\Donor\Application\UseCase\CompleteDonorProfileUseCase;
+use App\Donor\Application\UseCase\RecordDonationUseCase;
 use App\Donation\Application\UseCase\GenerateDonationCertificateUseCase;
 use App\Donor\Domain\Service\DonorEligibilityService;
 
@@ -42,7 +43,8 @@ class DonorController
         private DonorEligibilityService $donorEligibilityService,
         private GetDonorDashboardUseCase $dashboardUseCase,
         private GenerateDonationCertificateUseCase $certificateUseCase,
-        private ExpireOverdueRequestsUseCase $expireUseCase
+        private ExpireOverdueRequestsUseCase $expireUseCase,
+        private RecordDonationUseCase $recordDonationUseCase
     ) {}
 
     private function authGuard()
@@ -244,6 +246,59 @@ class DonorController
         exit;
     }
 
+    public function donatePage()
+    {
+        $this->authGuard();
+
+        $donorId = (int)Session::get('user_id');
+        $profile = $this->getDonorProfileUseCase->execute($donorId);
+
+        $donation = $this->donationRepo->findByDonor($donorId);
+        $lastDonationDate = !empty($donation[0]['donation_date']) ? (string)$donation[0]['donation_date'] : '';
+
+        $eligibility = $this->eligibilityService->evaluate(
+            $lastDonationDate,
+            $profile['availability_state']['next_available_date']
+        );
+        $eligibility['next_available_date'] = $profile['availability_state']['next_available_date'] ?? '';
+
+        $this->renderDonorView('donate', [
+            'user' => Session::get('user'),
+            'profile' => $profile,
+            'eligibility' => $eligibility,
+        ]);
+    }
+
+    public function storeDonation()
+    {
+        $this->authGuard();
+
+        $donorId = (int)Session::get('user_id');
+        $bloodGroup = trim((string)($_POST['blood_group'] ?? ''));
+        $bags = (int)($_POST['bags'] ?? 1);
+
+        if ($bloodGroup === '') {
+            $user = Session::get('user');
+            if (is_array($user)) {
+                $bloodGroup = trim((string)($user['blood_group'] ?? ''));
+            }
+        }
+
+        $result = $this->recordDonationUseCase->execute($donorId, $bloodGroup, $bags);
+
+        if (!$result['success']) {
+            Session::set('flash_message', $result['error']);
+            Session::set('flash_status', 'error');
+            header('Location: /BloodConnect/public/donor/donate');
+            exit;
+        }
+
+        Session::set('flash_message', $result['message'] ?? 'Donation recorded successfully.');
+        Session::set('flash_status', 'success');
+        header('Location: /BloodConnect/public/donor/donate');
+        exit;
+    }
+
     public function profile()
     {
         $this->authGuard();
@@ -345,9 +400,16 @@ class DonorController
     {
         $this->authGuard();
 
+        $history = $this->getDonationHistoryUseCase->execute((int)Session::get('user_id'));
+        $completedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 9;
+
         $this->renderDonorView('donation_history', [
             'user' => Session::get('user'),
-            'requests' => $this->getDonationHistoryUseCase->execute((int)Session::get('user_id')),
+            'donations' => $history['donations'],
+            'total_donations' => $history['total_donations'],
+            'total_bags' => $history['total_bags'],
+            'last_donation_date' => $history['last_donation_date'],
+            'completed_status_id' => $completedStatus,
         ]);
     }
 
@@ -372,9 +434,17 @@ class DonorController
 
         $donorDetails = $this->donorRepo->getDonorDetails((int)Session::get('user_id'));
 
+        $donation = $this->donationRepo->findByRequestId($requestId);
+        $completedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 9;
+        $donationId = 0;
+        if (!empty($donation) && (int)($donation['status'] ?? 0) === $completedStatus) {
+            $donationId = (int)($donation['donation_id'] ?? 0);
+        }
+
         $this->renderDonorView('donor_request_history_detail', [
             'user' => Session::get('user'),
             'request' => $request,
+            'donation_id' => $donationId,
             'donorDetails' => $donorDetails,
         ]);
     }
@@ -383,19 +453,20 @@ class DonorController
     {
         $this->authGuard();
 
-        $requestId = (int)($_GET['id'] ?? 0);
+        $donationId = (int)($_GET['id'] ?? 0);
 
-        if (!$requestId) {
+        if (!$donationId) {
             header('Location: /BloodConnect/public/donor/history');
             exit;
         }
 
-        $donation = $this->donationRepo->findDonationForCertificate($requestId, $this->getUserId());
+        $completedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 11;
+        $donation = $this->donationRepo->findDonationForCertificate($donationId, $this->getUserId(), $completedStatus);
 
         if (empty($donation)) {
             Session::set('flash_message', 'No completed donation record found for this request.');
             Session::set('flash_status', 'error');
-            header('Location: /BloodConnect/public/donor/history/view?id=' . $requestId);
+            header('Location: /BloodConnect/public/donor/history');
             exit;
         }
 
@@ -404,7 +475,7 @@ class DonorController
         $this->renderDonorView('donor_certificate', [
             'user' => Session::get('user'),
             'donation' => $donation,
-            'request_id' => $requestId,
+            'donation_id' => (int)$donation['donation_id'],
         ]);
     }
 
@@ -412,19 +483,19 @@ class DonorController
     {
         $this->authGuard();
 
-        $requestId = (int)($_GET['id'] ?? 0);
+        $donationId = (int)($_GET['id'] ?? 0);
 
-        if (!$requestId) {
+        if (!$donationId) {
             header('Location: /BloodConnect/public/donor/history');
             exit;
         }
 
-        $result = $this->certificateUseCase->execute($requestId, $this->getUserId());
+        $result = $this->certificateUseCase->execute($donationId, $this->getUserId());
 
         if (empty($result['success'])) {
             Session::set('flash_message', $result['error'] ?? 'Certificate could not be generated.');
             Session::set('flash_status', 'error');
-            header('Location: /BloodConnect/public/donor/history/view?id=' . $requestId);
+            header('Location: /BloodConnect/public/donor/history');
             exit;
         }
 

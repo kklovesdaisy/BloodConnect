@@ -65,6 +65,21 @@ use App\Shared\Helpers\Permission;
                 </a>
             <?php endif; ?>
 
+            <?php if (Permission::can('profile.view')): ?>
+                <div class="pt-4 pb-1 px-4">
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Account</span>
+                </div>
+
+                <a href="/BloodConnect/public/patient/profile"
+                    data-section="profile"
+                    class="nav-link flex items-center gap-3.5 px-4 py-3 rounded-xl font-bold text-base text-slate-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 shrink-0">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                    </svg>
+                    Patient Profile
+                </a>
+            <?php endif; ?>
+
             <?php if (Permission::can('notification.view')): ?>
                 <div class="pt-4 pb-1 px-4">
                     <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Communication</span>
@@ -161,6 +176,14 @@ use App\Shared\Helpers\Permission;
         // --- 2b. SECTION OWNERSHIP (shared sub-pages belong to a parent section) ---
         if (currentPath.endsWith('/patient/my-request/view') || currentPath.endsWith('/patient/my-request/cancel')) {
             const ownerLink = document.querySelector('.nav-link[data-section="my-requests"]');
+            if (ownerLink) {
+                ownerLink.classList.remove('text-slate-600', 'hover:bg-red-50', 'hover:text-red-600');
+                ownerLink.classList.add('bg-[#ce2424]', 'text-white');
+            }
+        }
+
+        if (currentPath.includes('/patient/profile')) {
+            const ownerLink = document.querySelector('.nav-link[data-section="profile"]');
             if (ownerLink) {
                 ownerLink.classList.remove('text-slate-600', 'hover:bg-red-50', 'hover:text-red-600');
                 ownerLink.classList.add('bg-[#ce2424]', 'text-white');

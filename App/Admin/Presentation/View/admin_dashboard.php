@@ -100,7 +100,7 @@ function timeAgo($datetime)
     }
 </style>
 
-<div class="space-y-6 md:space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div class="space-y-6 md:space-y-8 py-6">
 
     <div class="animate-fade-in-up opacity-0">
         <p class="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-1">Dashboard Overview</p>

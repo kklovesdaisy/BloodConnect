@@ -43,7 +43,7 @@ $moduleIcons = [
     }
 </style>
 
-<main class="flex-grow p-4 sm:p-8 lg:p-12 space-y-8 w-full max-w-7xl mx-auto min-h-screen select-none selection:bg-red-500 selection:text-white">
+<main class="flex-grow space-y-8 w-full min-h-screen select-none selection:bg-red-500 selection:text-white">
 
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 border-b border-slate-100 pb-6">
         <div class="space-y-1">

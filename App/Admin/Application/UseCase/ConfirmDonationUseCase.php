@@ -64,13 +64,20 @@ class ConfirmDonationUseCase
         $donor = $this->userRepo->findById($donorId);
         $donorGroup = BloodStock::normalize((string)($donor['blood_group'] ?? ''));
 
+        $donation = $this->donationRepo->findByRequestId($requestId);
+        $donationId = $donation ? (int)$donation['donation_id'] : null;
+        $donationDate = !empty($donation['donation_date'])
+            ? (string)$donation['donation_date']
+            : date('Y-m-d');
+
         $db = Database::getConnection();
         $db->beginTransaction();
 
         try {
-            // Stock in: the donated bag enters inventory under the donor's group.
+            // Stock in: the donated bag enters inventory under the donor's
+            // group with the donation date and the standard 42-day shelf life.
             if ($donorGroup !== '') {
-                $this->bloodStockRepo->increase($donorGroup, 1);
+                $this->bloodStockRepo->recordBags($donorGroup, 1, $donationDate, $donationId);
             }
 
             // Stock out: one bag of the needed group is issued to the patient.

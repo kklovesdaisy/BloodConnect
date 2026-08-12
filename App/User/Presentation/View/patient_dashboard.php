@@ -25,10 +25,6 @@ $metrics = $metrics ?? [
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        .custom-scroll::-webkit-scrollbar { width: 5px; }
-        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         body {
             background-color: #FFF9F9;
         }
@@ -124,7 +120,7 @@ $metrics = $metrics ?? [
                 <span class="bg-[#E63946] text-white text-xs font-bold px-2 py-0.5 rounded-full"><?= !empty($requests) ? count($requests) : 0 ?></span>
             </div>
 
-            <div class="hidden lg:block bg-white rounded-2xl border border-slate-100 max-h-[400px] overflow-y-auto custom-scroll">
+            <div class="hidden lg:block bg-white rounded-2xl border border-slate-100">
                 <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50/70 border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -226,7 +222,7 @@ $metrics = $metrics ?? [
                     </table>
             </div>
 
-            <div class="lg:hidden max-h-[400px] overflow-y-auto custom-scroll space-y-4 pr-1">
+            <div class="lg:hidden space-y-4 pr-1">
                 <?php if (!empty($requests)): ?>
                     <?php foreach ($requests as $request): ?>
                         <div class="bg-white rounded-2xl border-l-4 border-[#E63946] border-y border-r border-slate-100 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative transition-all duration-200 active:scale-[0.99]">
@@ -282,6 +278,57 @@ $metrics = $metrics ?? [
                 <?php else: ?>
                     <div class="bg-white rounded-2xl p-8 border border-slate-100 text-center text-slate-400">
                         No active requests found.
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Recent Notifications -->
+        <div class="animate-fade-in" style="animation-delay: 250ms;">
+            <div class="flex items-center gap-2 mb-4">
+                <h2 class="text-lg font-bold text-slate-900">Recent Notifications</h2>
+                <?php if (($unreadCount ?? 0) > 0): ?>
+                    <span class="bg-[#E63946] text-white text-xs font-bold px-2 py-0.5 rounded-full"><?= (int)$unreadCount ?></span>
+                <?php endif; ?>
+            </div>
+
+            <div class="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-100 shadow-sm p-5">
+                <?php if (empty($recent_notifications)): ?>
+                    <div class="flex flex-col items-center justify-center py-10 text-center">
+                        <div class="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-2xl">
+                            <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                        </div>
+                        <h3 class="mt-3 text-sm font-bold text-slate-800">You're all caught up</h3>
+                        <p class="mt-1 text-xs text-slate-400">You don't have any new notifications.</p>
+                    </div>
+                <?php else: ?>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <?php foreach ($recent_notifications as $notification):
+                            $nt = strtolower((string)($notification['type'] ?? 'info'));
+                            if (str_contains($nt, 'stock') || str_contains($nt, 'request') || str_contains($nt, 'donation')) {
+                                $iconBg = 'bg-red-50 text-[#E63946] border-red-100'; $icon = 'fa-droplet';
+                            } elseif (str_contains($nt, 'approv') || str_contains($nt, 'confirm') || str_contains($nt, 'complete')) {
+                                $iconBg = 'bg-emerald-50 text-emerald-600 border-emerald-100'; $icon = 'fa-circle-check';
+                            } elseif (str_contains($nt, 'assign') || str_contains($nt, 'match')) {
+                                $iconBg = 'bg-indigo-50 text-indigo-600 border-indigo-100'; $icon = 'fa-handshake';
+                            } else {
+                                $iconBg = 'bg-amber-50 text-amber-600 border-amber-100'; $icon = 'fa-bell';
+                            }
+                        ?>
+                            <div class="flex items-start gap-3 p-4 rounded-xl border border-slate-100 bg-slate-50/40">
+                                <span class="w-9 h-9 rounded-xl border flex items-center justify-center text-sm shrink-0 <?= $iconBg ?>">
+                                    <i class="fa-solid <?= $icon ?>"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-bold text-slate-800 leading-snug"><?= htmlspecialchars($notification['title'] ?? 'Update') ?></p>
+                                    <p class="text-[11px] text-slate-500 mt-0.5 leading-snug"><?= htmlspecialchars($notification['message'] ?? '') ?></p>
+                                    <p class="text-[10px] text-slate-300 font-semibold mt-1.5"><?= !empty($notification['created_at']) ? date('d M Y', strtotime($notification['created_at'])) : '' ?></p>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <div class="mt-4 text-right">
+                        <a href="/BloodConnect/public/patient/notifications" class="text-xs font-bold text-[#E63946] hover:text-[#D62839]">View all →</a>
                     </div>
                 <?php endif; ?>
             </div>

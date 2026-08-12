@@ -298,6 +298,29 @@ class EmailService
         );
     }
 
+    public function sendHospitalCredentials(string $toEmail, string $username, string $password, string $hospitalName): bool
+    {
+        $body = "
+            <p>Hello,</p>
+            <p>Your hospital account for <strong>{$this->text($hospitalName)}</strong> has been created on BloodConnect.</p>
+            <p>Use the credentials below to log in:</p>
+            {$this->dataTable([
+                'Login Page' => 'https://bloodconnect.example/login',
+                'Username' => $this->text($username),
+                'Password' => $this->text($password),
+            ])}
+            <p>Please log in and update your password after your first sign-in for security.</p>
+            <p>Through the hospital dashboard you can request blood bags from the central stock and track your pending requests.</p>
+        ";
+
+        return $this->send(
+            $toEmail,
+            'Your BloodConnect Hospital Account Has Been Created',
+            $this->layout('Hospital Account Created', $body),
+            "Your hospital account for {$this->plain($hospitalName)} has been created on BloodConnect. Username: {$this->plain($username)}. Please log in to get started."
+        );
+    }
+
     private function send(string $toEmail, string $subject, string $htmlBody, string $altBody): bool
     {
         $mail = new PHPMailer(true);

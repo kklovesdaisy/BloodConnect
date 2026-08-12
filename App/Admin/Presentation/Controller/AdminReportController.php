@@ -49,10 +49,12 @@ class AdminReportController
 
     public function donations(): void
     {
-        $this->render('donation_report.php', 'donations', 'Donation Report', 'donation_report');
+        $tab = strtolower((string)($_GET['tab'] ?? 'donor')) === 'hospital' ? 'hospital' : 'donor';
+        $method = $tab === 'hospital' ? 'hospitalAllocations' : 'donations';
+        $this->render('donation_report.php', $method, 'Donation Report', 'donation_report', $tab);
     }
 
-    private function render(string $view, string $providerMethod, string $title, string $fileStem): void
+    private function render(string $view, string $providerMethod, string $title, string $fileStem, string $tab = 'donor'): void
     {
         $export = strtolower((string)($_GET['export'] ?? ''));
         $filters = array_intersect_key($_GET, array_flip(['q', 'status', 'urgency', 'blood_group', 'location', 'from', 'to']));
@@ -60,14 +62,15 @@ class AdminReportController
         $data = $this->provider->{$providerMethod}($filters);
 
         if ($export === 'pdf') {
-            $this->sendPdf($title, $fileStem, $data);
+            $this->sendPdf($title, $fileStem, $data, $tab);
         }
         if ($export === 'excel' || $export === 'xlsx') {
-            $this->sendExcel($title, $fileStem, $data);
+            $this->sendExcel($title, $fileStem, $data, $tab);
         }
 
         $reportData = $data;
         $reportTitle = $title;
+        $reportTab = $tab;
 
         ob_start();
         require __DIR__ . '/../View/' . $view;
@@ -75,28 +78,31 @@ class AdminReportController
         require __DIR__ . '/../Layout/adminApp.php';
     }
 
-    private function sendPdf(string $title, string $fileStem, array $data): void
+    private function sendPdf(string $title, string $fileStem, array $data, string $tab = 'donor'): void
     {
         $meta = $this->meta();
-        $columns = $this->columnsFor($fileStem);
+        $columns = $this->columnsFor($fileStem, $tab);
         $content = $this->pdf->generate($title, $columns, $data['rows'], $data['totals'], $meta, $this->subtitle($data['filters']));
 
         $filename = $fileStem . '_' . date('Y-m-d') . '.pdf';
         $this->download($content, $filename, 'application/pdf');
     }
 
-    private function sendExcel(string $title, string $fileStem, array $data): void
+    private function sendExcel(string $title, string $fileStem, array $data, string $tab = 'donor'): void
     {
         $meta = $this->meta();
-        $columns = $this->columnsFor($fileStem);
+        $columns = $this->columnsFor($fileStem, $tab);
         $content = $this->xlsx->generate($title, $columns, $data['rows'], $data['totals'], $meta, $this->subtitle($data['filters']));
 
         $filename = $fileStem . '_' . date('Y-m-d') . '.xlsx';
         $this->download($content, $filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     }
 
-    private function columnsFor(string $fileStem): array
+    private function columnsFor(string $fileStem, string $tab = 'donor'): array
     {
+        if ($fileStem === 'donation_report' && $tab === 'hospital') {
+            return ['Request Code', 'Hospital', 'Location', 'Blood Group', 'Requested', 'Allocated', 'Pending', 'Status', 'Date'];
+        }
         return match ($fileStem) {
             'donor_report' => ['Donor ID', 'Name', 'Blood Group', 'Phone', 'Location', 'Status'],
             'patient_report' => ['Patient ID', 'Name', 'Blood Group', 'Phone', 'Status'],

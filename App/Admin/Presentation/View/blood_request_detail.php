@@ -81,7 +81,7 @@ if (!function_exists('getAdminBloodGroupStyle')) {
 </head>
 
 <body class="bg-slate-50 min-h-screen text-slate-800 tracking-tight antialiased">
-    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div>
 
         <div class="relative bg-white border border-slate-200/60 rounded-2xl p-6 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 shadow-xs animate-fade-in-up">
             <div class="flex items-center gap-4">

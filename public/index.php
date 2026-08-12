@@ -56,6 +56,16 @@ $container->singleton(
     \App\BloodStock\Infrastructure\Persistence\BloodStockRepository::class
 );
 
+$container->singleton(
+    \App\Hospital\Domain\Repository\HospitalRepositoryInterface::class,
+    \App\Hospital\Infrastructure\Persistence\HospitalRepository::class
+);
+
+$container->singleton(
+    \App\Hospital\Domain\Repository\HospitalBloodRequestRepositoryInterface::class,
+    \App\Hospital\Infrastructure\Persistence\HospitalBloodRequestRepository::class
+);
+
 // ===== Shared Service Bindings =====
 $container->singleton(
     \App\Shared\Infrastructure\Persistence\MasterDataRepository::class,
@@ -104,7 +114,8 @@ $container->singleton(
     function (\App\Shared\Infrastructure\Container\Container $c) {
         return new \App\Donation\Application\UseCase\GenerateDonationCertificateUseCase(
             $c->get(\App\Donation\Domain\Repository\DonationRepositoryInterface::class),
-            $c->get(\App\Shared\Infrastructure\Pdf\DonationCertificatePdfGenerator::class)
+            $c->get(\App\Shared\Infrastructure\Pdf\DonationCertificatePdfGenerator::class),
+            $c->get(\App\Shared\Infrastructure\Persistence\MasterDataRepository::class)
         );
     }
 );

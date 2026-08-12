@@ -15,6 +15,7 @@ namespace App\Shared\Presentation\View;
  *   Donor                             -> donorApp.php
  *   User (patient)                    -> patientApp.php
  *   Admin                             -> adminApp.php
+ *   Hospital                          -> hospitalApp.php
  */
 class View
 {
@@ -25,6 +26,7 @@ class View
         'Donor'          => 'donorApp.php',
         'User'           => 'patientApp.php',
         'Admin'          => 'adminApp.php',
+        'Hospital'       => 'hospitalApp.php',
     ];
 
     public static function render(string $module, string $view, array $data = []): void

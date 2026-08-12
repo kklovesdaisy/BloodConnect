@@ -7,6 +7,7 @@ use App\Donation\Domain\Repository\DonationRepositoryInterface;
 use App\Donor\Domain\Repository\DonorRepositoryInterface;
 use App\Donor\Domain\Service\DonorDonationEligibilityService;
 use App\Donor\Domain\Service\DonorEligibilityService;
+use App\Notification\Domain\Repository\NotificationRepositoryInterface;
 use App\Shared\Infrastructure\Persistence\MasterDataRepository;
 
 /**
@@ -24,7 +25,8 @@ class GetDonorDashboardUseCase
         private DonationRepositoryInterface $donationRepo,
         private MasterDataRepository $masterRepo,
         private DonorDonationEligibilityService $donationEligibilityService,
-        private DonorEligibilityService $donorEligibilityService
+        private DonorEligibilityService $donorEligibilityService,
+        private NotificationRepositoryInterface $notificationRepo
     ) {
     }
 
@@ -33,9 +35,18 @@ class GetDonorDashboardUseCase
         $acceptedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'ACCEPTED') ?? 8;
         $pendingRequests = $this->bloodRequestRepo->findPendingRequestsForDonor($bloodGroup, $donorId);
         $acceptedRequests = $this->bloodRequestRepo->findAcceptedRequestsForDonor($donorId, (int) $acceptedStatus);
-        $lastDonation = $acceptedRequests[0] ?? [];
         $combinedRequests = array_merge($pendingRequests, $acceptedRequests);
-        $lastDonationDate = !empty($lastDonation['created_at']) ? (string) $lastDonation['created_at'] : '';
+
+        // The real donation ledger (includes standalone donations), newest first.
+        $donations = $this->donationRepo->findByDonor($donorId);
+        $lastDonation = $donations[0] ?? [];
+        $lastDonationDate = !empty($lastDonation['donation_date'])
+            ? (string) $lastDonation['donation_date']
+            : '';
+        $lastDonationLocation = !empty($lastDonation['hospital_name'])
+            ? (string) $lastDonation['hospital_name']
+            : 'Central Stock';
+
         $availabilityState = $this->donorRepo->syncAvailabilityStatus($donorId);
 
         $donorDetails = $this->donorRepo->getDonorDetails($donorId);
@@ -61,7 +72,6 @@ class GetDonorDashboardUseCase
             }
         }
 
-        $donations = $this->donationRepo->findByDonor($donorId);
         foreach ($donations as $donation) {
             $date = $donation['donation_date'] ?? $donation['created_at'] ?? '';
             if (!empty($date)) {
@@ -92,6 +102,15 @@ class GetDonorDashboardUseCase
                     ? 'Not eligible: ' . implode(', ', $profileEligibility['reasons'])
                     : $eligibility['message']));
 
+        // "My Impact" metrics.
+        $impactBags = 0;
+        foreach ($donations as $donation) {
+            $impactBags += max(1, (int)($donation['bags'] ?? 1));
+        }
+        $impactRequestsSupported = count($acceptedRequests);
+
+        $recentNotifications = array_slice($this->notificationRepo->findByUserId($donorId), 0, 3);
+
         return [
             'availability' => $availabilityState['available'] ? 'Available' : 'Unavailable',
             'availability_message' => $availMessage,
@@ -101,11 +120,15 @@ class GetDonorDashboardUseCase
             'last_donation_date' => !empty($lastDonationDate)
                 ? date('d M Y', strtotime($lastDonationDate))
                 : 'No donation yet',
-            'last_donation_location' => $lastDonation['hospital_name'] ?? 'No location saved',
+            'last_donation_location' => $lastDonationLocation,
             'blood_requests' => $combinedRequests,
             'pending_requests_count' => count($pendingRequests),
             'total_donations' => count($donations),
             'recent_activities' => $activities,
+            'impact_donations' => count($donations),
+            'impact_bags' => $impactBags,
+            'impact_requests_supported' => $impactRequestsSupported,
+            'recent_notifications' => $recentNotifications,
         ];
     }
 }

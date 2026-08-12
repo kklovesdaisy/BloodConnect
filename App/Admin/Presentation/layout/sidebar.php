@@ -25,11 +25,20 @@ try {
 } catch (Throwable $e) {
     $pendingBloodRequests = 0;
 }
+
+$pendingHospitalRequests = 0;
+try {
+    $stmtH = $db->prepare("SELECT COUNT(*) FROM hospital_blood_requests WHERE status = 'PENDING'");
+    $stmtH->execute();
+    $pendingHospitalRequests = (int)$stmtH->fetchColumn();
+} catch (Throwable $e) {
+    $pendingHospitalRequests = 0;
+}
 ?>
 
 <div id="sidebarBackdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300 lg:hidden"></div>
 
-<aside id="sidebarDrawer" class="fixed inset-y-0 left-0 w-72 bg-white border-r border-slate-100 p-5 flex flex-col justify-between z-50 -translate-x-full lg:translate-x-0 lg:sticky lg:top-0 h-screen transition-transform duration-300 ease-in-out shrink-0">
+<aside id="sidebarDrawer" class="fixed inset-y-0 left-0 w-80 bg-white border-r border-slate-100 p-5 flex flex-col justify-between z-50 -translate-x-full lg:translate-x-0 lg:sticky lg:top-0 h-screen transition-transform duration-300 ease-in-out shrink-0">
     <div class="space-y-7">
         <!-- Brand Header -->
         <div class="flex items-center justify-between">
@@ -83,6 +92,33 @@ try {
                     <path d="M12 2.5C12 2.5 5 9.5 5 14.5C5 18.37 8.13 21.5 12 21.5C15.87 21.5 19 18.37 19 14.5C19 9.5 12 2.5 12 2.5Z" />
                 </svg>
                 Donor Management
+            </a>
+
+            <?php if (Permission::can('hospital.view')): ?>
+                <a href="/BloodConnect/public/admin/hospitals"
+                    data-section="hospitals"
+                    class="nav-link flex items-center gap-3.5 px-4 py-3 rounded-xl font-bold text-base text-slate-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 shrink-0">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                    </svg>
+                    Hospital Management
+                </a>
+            <?php endif; ?>
+
+            <a href="/BloodConnect/public/admin/hospital-requests"
+                data-section="hospital-requests"
+                class="nav-link flex items-center justify-between px-4 py-3 rounded-xl font-bold text-base text-slate-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200">
+                <div class="flex items-center gap-3.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 shrink-0">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v1.5m0-1.5v6.75c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125v-6.75" />
+                    </svg>
+                    <span class="whitespace-nowrap tracking-tight">Hospital Stock Requests</span>
+                </div>
+                <?php if ($pendingHospitalRequests > 0): ?>
+                    <span class="hospital-pending-badge w-5 h-5 rounded-full bg-[#ce2424] text-white text-[10px] font-black flex items-center justify-center"><?= $pendingHospitalRequests ?></span>
+                <?php else: ?>
+                    <span class="hospital-pending-badge w-5 h-5 rounded-full bg-[#ce2424] text-white text-[10px] font-black hidden"></span>
+                <?php endif; ?>
             </a>
 
             <a href="/BloodConnect/public/admin/blood-requests"
@@ -238,7 +274,7 @@ try {
                 link.classList.remove('text-slate-600', 'hover:bg-red-50', 'hover:text-red-600');
                 link.classList.add('bg-[#ce2424]', 'text-white');
 
-                const badge = link.querySelector('.notification-badge, .pending-badge');
+                const badge = link.querySelector('.notification-badge, .pending-badge, .hospital-pending-badge');
                 if (badge) {
                     badge.classList.remove('bg-[#ce2424]', 'text-white');
                     badge.classList.add('bg-white', 'text-[#ce2424]');
@@ -256,6 +292,8 @@ try {
             ownedSection = 'blood-requests';
         } else if (currentPath.startsWith('/BloodConnect/public/admin/reports')) {
             ownedSection = 'reports';
+        } else if (currentPath.startsWith('/BloodConnect/public/admin/hospitals')) {
+            ownedSection = 'hospitals';
         } else if (currentPath.startsWith('/BloodConnect/public/admin/roles')) {
             ownedSection = 'roles';
         }
@@ -313,4 +351,26 @@ try {
 
     updatePendingBloodRequests();
     setInterval(updatePendingBloodRequests, 15000);
+
+    // --- 5. PENDING HOSPITAL STOCK REQUESTS POLLING ---
+    async function updatePendingHospitalRequests() {
+        try {
+            const res = await fetch("/BloodConnect/public/admin/pending-hospital-requests-count");
+            const data = await res.json();
+            const badges = document.querySelectorAll(".hospital-pending-badge");
+            badges.forEach(badge => {
+                if (data.count > 0) {
+                    badge.classList.remove('hidden');
+                    badge.textContent = data.count;
+                } else {
+                    badge.classList.add('hidden');
+                }
+            });
+        } catch (error) {
+            console.log("Hospital pending count update failed", error);
+        }
+    }
+
+    updatePendingHospitalRequests();
+    setInterval(updatePendingHospitalRequests, 15000);
 </script>

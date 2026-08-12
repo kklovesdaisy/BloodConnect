@@ -300,6 +300,80 @@ class ReportDataProvider
         ];
     }
 
+    /**
+     * Blood bags allocated from central stock to hospitals (the system side
+     * of donations), with full bag and hospital details.
+     *
+     * @return array{filters: array, rows: array, totals: array}
+     */
+    public function hospitalAllocations(array $filters): array
+    {
+        $f = $this->normalize($filters, ['q', 'status', 'blood_group', 'from', 'to']);
+
+        $where = '1 = 1';
+        $params = [];
+
+        if ($f['status'] !== '') {
+            $where .= ' AND r.status = ?';
+            $params[] = $f['status'];
+        }
+        if ($f['blood_group'] !== '') {
+            $where .= ' AND r.blood_group = ?';
+            $params[] = $f['blood_group'];
+        }
+        if ($f['q'] !== '') {
+            $like = '%' . $f['q'] . '%';
+            $where .= ' AND (r.hospital_name LIKE ? OR r.request_code LIKE ? OR h.phone LIKE ? OR u.email LIKE ? OR h.address LIKE ?)';
+            $params[] = $like; $params[] = $like; $params[] = $like; $params[] = $like; $params[] = $like;
+        }
+        if ($f['from'] !== '') {
+            $where .= ' AND DATE(r.created_at) >= ?';
+            $params[] = $f['from'];
+        }
+        if ($f['to'] !== '') {
+            $where .= ' AND DATE(r.created_at) <= ?';
+            $params[] = $f['to'];
+        }
+
+        $stmt = $this->db->prepare("
+            SELECT
+                r.request_code,
+                r.hospital_name,
+                TRIM(CONCAT_WS(', ', NULLIF(h.township, ''), NULLIF(h.state_region, ''))) AS location,
+                r.blood_group,
+                r.quantity_requested,
+                r.quantity_allocated,
+                r.quantity_pending,
+                r.status,
+                r.created_at
+            FROM hospital_blood_requests r
+            LEFT JOIN hospitals h ON h.user_id = r.hospital_user_id
+            LEFT JOIN users u ON u.user_id = r.hospital_user_id
+            WHERE {$where}
+            ORDER BY r.created_at DESC, r.request_id DESC
+        ");
+        $stmt->execute($params);
+        $rows = array_map(function (array $r): array {
+            return [
+                $r['request_code'],
+                $r['hospital_name'] ?: '—',
+                $r['location'] ?: '—',
+                $r['blood_group'],
+                (string)(int)$r['quantity_requested'],
+                (string)(int)$r['quantity_allocated'],
+                (string)(int)$r['quantity_pending'],
+                $r['status'],
+                date('Y-m-d', strtotime((string)$r['created_at'])),
+            ];
+        }, $stmt->fetchAll());
+
+        return [
+            'filters' => $f,
+            'rows' => $rows,
+            'totals' => $this->hospitalAllocationTotals($where, $params),
+        ];
+    }
+
     public static function statusOptions(): array
     {
         $stmt = Database::getConnection()->prepare(
@@ -405,6 +479,30 @@ class ReportDataProvider
         $totals['Total Donations'] = $grand;
 
         return $totals;
+    }
+
+    private function hospitalAllocationTotals(string $where, array $params): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT
+                COUNT(*) AS total,
+                COALESCE(SUM(r.quantity_requested), 0) AS requested,
+                COALESCE(SUM(r.quantity_allocated), 0) AS allocated,
+                COALESCE(SUM(r.quantity_pending), 0) AS pending
+            FROM hospital_blood_requests r
+            LEFT JOIN hospitals h ON h.user_id = r.hospital_user_id
+            LEFT JOIN users u ON u.user_id = r.hospital_user_id
+            WHERE {$where}
+        ");
+        $stmt->execute($params);
+        $t = $stmt->fetch();
+
+        return [
+            'Total Allocations' => (int)$t['total'],
+            'Bags Requested' => (int)$t['requested'],
+            'Bags Allocated' => (int)$t['allocated'],
+            'Bags Pending' => (int)$t['pending'],
+        ];
     }
 
     private function normalize(array $filters, array $allowed): array

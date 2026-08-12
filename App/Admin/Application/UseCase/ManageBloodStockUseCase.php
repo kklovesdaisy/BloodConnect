@@ -3,68 +3,61 @@
 namespace App\Admin\Application\UseCase;
 
 use App\BloodStock\Domain\Repository\BloodStockRepositoryInterface;
+use App\Donation\Domain\Repository\DonationRepositoryInterface;
 use App\Shared\Infrastructure\Persistence\MasterDataRepository;
 
 class ManageBloodStockUseCase
 {
     public function __construct(
         private BloodStockRepositoryInterface $stockRepo,
+        private DonationRepositoryInterface $donationRepo,
         private MasterDataRepository $masterRepo
     ) {}
 
     /**
      * Current inventory for every blood group (all groups are seeded, so the
      * admin page always shows the full set even when a group is at zero).
+     *
+     * Each row is enriched with the bags donated by donors and the bags
+     * allocated to hospital requests for that group, plus an expiry overview
+     * (bags expiring soon and expired bags awaiting disposal).
      */
     public function listAll(): array
     {
+        // Move any bags past their 42-day shelf life into EXPIRED and off the
+        // available count before the page is rendered.
+        $this->stockRepo->expireDueBags();
+
         $rows = $this->stockRepo->findAll();
+        $expiry = $this->stockRepo->findExpiryOverview();
+
+        $completedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 9;
+        $donated = $this->donationRepo->sumDonatedBagsByBloodGroup($completedStatus);
 
         foreach ($rows as &$row) {
             $row['label'] = $this->masterRepo->getLabel('BLOOD_GROUP', (string)$row['blood_group'])
                 ?? (string)$row['blood_group'];
+            $row['donated_bags'] = (int)($donated[$row['blood_group']] ?? 0);
+            $row['expiring_soon'] = (int)($expiry[$row['blood_group']]['expiring_soon'] ?? 0);
+            $row['expired'] = (int)($expiry[$row['blood_group']]['expired'] ?? 0);
+            $row['oldest_expiry'] = $expiry[$row['blood_group']]['oldest_expiry'] ?? null;
         }
         unset($row);
 
         return $rows;
     }
 
-    public function recentAdjustments(int $limit = 20): array
-    {
-        return $this->stockRepo->recentAdjustments($limit);
-    }
-
     /**
-     * Apply a manual stock adjustment. A positive delta adds bags, a negative
-     * delta removes them; stock can never fall below zero.
+     * Expire any past-due bags, then permanently remove all expired bags from
+     * the inventory ledger. Returns the number of bags disposed.
      */
-    public function adjust(string $bloodGroup, int $delta, string $reason, int $actorId): array
+    public function disposeExpiredBags(?int $createdBy = null): array
     {
-        $bloodGroup = trim($bloodGroup);
-
-        if ($bloodGroup === '') {
-            return ['success' => false, 'error' => 'Please select a blood group.'];
-        }
-
-        if ($delta === 0) {
-            return ['success' => false, 'error' => 'Adjustment quantity cannot be zero.'];
-        }
-
-        if (abs($delta) > 100) {
-            return ['success' => false, 'error' => 'Adjustment quantity is too large (max 100 bags).'];
-        }
-
-        $applied = $this->stockRepo->adjust($bloodGroup, $delta, $reason, $actorId);
-
-        if (!$applied) {
-            return ['success' => false, 'error' => 'Adjustment failed: the stock level cannot go below zero.'];
-        }
-
-        $direction = $delta > 0 ? 'added to' : 'removed from';
+        $disposed = $this->stockRepo->disposeExpiredBags($createdBy);
 
         return [
-            'success' => true,
-            'message' => sprintf('%d bag(s) %s %s stock.', abs($delta), $direction, strtoupper($bloodGroup)),
+            'success'  => true,
+            'disposed' => $disposed,
         ];
     }
 }

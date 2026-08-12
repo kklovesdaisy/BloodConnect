@@ -152,71 +152,147 @@ $recent_activities = $recent_activities ?? [];
                 </div>
             </div>
 
-            <!-- Blood Requests Section -->
+            <!-- Matching Blood Requests Section -->
             <div class="space-y-4">
-                <div class="flex items-center gap-3">
-                    <h3 class="text-xl font-bold text-slate-900 tracking-tight">Recent Blood Requests</h3>
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <h3 class="text-base sm:text-xl font-extrabold text-slate-900 tracking-tight uppercase">Matching Blood Requests</h3>
+                        <?php if (!empty($blood_requests)): ?>
+                            <span class="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full bg-rose-100 text-rose-600 text-[11px] font-black">
+                                <?= count($blood_requests) ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                    <a href="/BloodConnect/public/donor/blood-requests"
+                        class="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-700 hover:gap-2 transition-all duration-200 shrink-0">
+                        View All <span aria-hidden="true">&rarr;</span>
+                    </a>
                 </div>
 
-                <div class="space-y-3">
-                    <?php foreach ($blood_requests as $request): ?>
-                        <?php
-                        $priorityColor = 'border-slate-100';
-                        $badgeColor = 'bg-slate-100 text-slate-600';
-                        $urgency = strtolower($request['urgency'] ?? '');
-                        $statusValue = strtolower((string)($request['status_name'] ?? $request['status'] ?? 'pending'));
-                        $isAccepted = str_contains($statusValue, 'accepted') || (int)($request['status'] ?? 0) === 8;
+                <?php if (empty($blood_requests)): ?>
+                    <!-- Empty state -->
+                    <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-10 sm:p-12 text-center">
+                        <div class="w-16 h-16 mx-auto rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-3xl">
+                            🩸
+                        </div>
+                        <h4 class="mt-4 text-base font-extrabold text-slate-800 tracking-tight">No matching requests</h4>
+                        <p class="mt-1 text-sm text-slate-500">There are currently no blood requests matching your blood group.</p>
+                        <p class="text-sm text-slate-500">We'll notify you when your blood type is needed.</p>
+                        <a href="/BloodConnect/public/donor/blood-requests"
+                            class="mt-5 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white text-xs font-bold shadow-sm transition-all duration-200">
+                            View All Requests
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <div class="space-y-3">
+                        <?php foreach ($blood_requests as $request): ?>
+                            <?php
+                            $urgency = strtolower((string)($request['urgency'] ?? ''));
+                            $statusValue = strtolower((string)($request['status_name'] ?? $request['status'] ?? 'pending'));
+                            $isAccepted = str_contains($statusValue, 'accepted') || (int)($request['status'] ?? 0) === 8;
+                            $isCritical = str_contains($urgency, 'critical');
+                            $isUrgent = str_contains($urgency, 'urgent');
 
-                        if (str_contains($urgency, 'critical')) {
-                            $priorityColor = 'border-l-[6px] border-l-red-500';
-                            $badgeColor = 'bg-red-50 text-red-600';
-                        } elseif (str_contains($urgency, 'urgent')) {
-                            $priorityColor = 'border-l-[6px] border-l-orange-500';
-                            $badgeColor = 'bg-orange-50 text-orange-600';
-                        } else {
-                            $priorityColor = 'border-l-[6px] border-l-blue-500';
-                            $badgeColor = 'bg-blue-50 text-blue-600';
-                        }
-                        ?>
+                            $badgeBg = $isCritical
+                                ? 'bg-red-600 text-white'
+                                : ($isUrgent
+                                    ? 'bg-orange-500 text-white'
+                                    : 'bg-blue-600 text-white');
 
-                        <div class="bg-white border <?= $priorityColor; ?> border-slate-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div class="flex items-start sm:items-center gap-4">
-                                <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 font-black flex items-center justify-center shrink-0 text-base shadow-sm">
-                                    <?= htmlspecialchars($request['blood_group_needed'] ?? ''); ?>
-                                </div>
-                                <div class="space-y-0.5">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h4 class="font-bold text-slate-900">Request from: <?= htmlspecialchars($request['patient_name'] ?? 'Unknown'); ?></h4>
-                                        <span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider text-[10px] <?= $badgeColor; ?>"><?= htmlspecialchars($request['urgency'] ?? 'Normal'); ?> Urgency</span>
+                            $daysToExpiry = !empty($request['expiry_date'])
+                                ? floor((strtotime($request['expiry_date']) - time()) / 86400)
+                                : null;
+                            $timing = $daysToExpiry === 0
+                                ? 'Needed Today'
+                                : ($daysToExpiry !== null && $daysToExpiry <= 3
+                                    ? 'Needed Soon'
+                                    : 'Open Request');
+                            $unitCount = max(1, (int)($request['unit'] ?? 1));
+                            ?>
+                            <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-5 transition-all duration-200 hover:shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 <?= $isCritical ? 'border-l-4 border-l-red-600' : ($isUrgent ? 'border-l-4 border-l-orange-500' : 'border-l-4 border-l-blue-600') ?>">
+                                <div class="flex items-start gap-4 min-w-0">
+                                    <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 font-black flex items-center justify-center text-sm shrink-0 shadow-sm border border-rose-100">
+                                        <?= htmlspecialchars($request['blood_group_needed'] ?? 'N/A') ?>
                                     </div>
-                                    <p class="text-sm text-slate-500">
-                                        <span class="inline-block mr-1 text-slate-400">🏢</span>
-                                        <?= htmlspecialchars($request['hospital_name'] ?? 'Not specified'); ?>
-                                    </p>
-                                    <p class="text-xs font-semibold text-slate-400">
-                                        <?= htmlspecialchars($request['unit'] ?? '0'); ?> Units • Requested on
-                                        <span class="text-slate-600">
-                                            <?= isset($request['created_at']) ? date('d M Y', strtotime($request['created_at'])) : 'N/A'; ?>
-                                        </span>
-                                    </p>
+                                    <div class="min-w-0 space-y-1">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full <?= $badgeBg ?>">
+                                                <?= htmlspecialchars(strtoupper((string)($request['urgency'] ?? 'Normal'))) ?>
+                                            </span>
+                                            <h4 class="font-bold text-slate-900 text-sm sm:text-base">
+                                                <?= htmlspecialchars($request['blood_group_needed'] ?? '') ?> Blood Required
+                                            </h4>
+                                        </div>
+                                        <p class="text-sm text-slate-500 flex items-center gap-1.5">
+                                            <span class="inline-block">🏥</span>
+                                            <?= htmlspecialchars($request['hospital_name'] ?? 'Not specified') ?>
+                                        </p>
+                                        <p class="text-xs font-semibold text-slate-400">
+                                            <?= $unitCount ?> bag<?= $unitCount > 1 ? 's' : '' ?> required
+                                            <span class="text-slate-300 mx-1">&bull;</span>
+                                            <?= htmlspecialchars($timing) ?>
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="flex items-center justify-between md:justify-end gap-3 pt-3 md:pt-0 border-t border-slate-50 md:border-t-0">
-                                <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+                                <div class="flex items-center gap-2.5 shrink-0">
+                                    <a href="/BloodConnect/public/donor/blood-request/<?= (int)$request['request_id'] ?>"
+                                        class="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 active:scale-[0.98]">
+                                        View
+                                    </a>
                                     <?php if ($isAccepted): ?>
-                                        <span class="flex items-center gap-1.5 text-emerald-600 font-bold text-sm bg-emerald-50 px-3 py-1.5 rounded-xl">
-                                            Processed
+                                        <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100">
+                                            ✓ Processed
                                         </span>
                                     <?php else: ?>
-                                        <span class="flex items-center gap-1.5 text-amber-600 font-bold text-sm bg-amber-50 px-3 py-1.5 rounded-xl">
-                                            Pending
-                                        </span>
+                                        <form method="POST" action="/BloodConnect/public/donor/request/accept" class="inline">
+                                            <input type="hidden" name="request_id" value="<?= (int)$request['request_id'] ?>">
+                                            <button type="submit"
+                                                class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-all duration-200 active:scale-[0.98]">
+                                                Respond
+                                            </button>
+                                        </form>
                                     <?php endif; ?>
                                 </div>
                             </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- My Impact -->
+            <div class="relative bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+                <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-[#E63946] to-[#ce2424] opacity-100"></div>
+                <div class="relative p-6 sm:p-8">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <h3 class="text-base sm:text-xl font-extrabold text-slate-900 tracking-tight uppercase">My Impact</h3>
+                        <p class="text-xs sm:text-sm font-semibold <?= $impact_donations > 0 ? 'text-[#E63946]' : 'text-slate-500' ?>">
+                            <?= $impact_donations > 0
+                                ? 'Thank you for helping save lives! ❤️'
+                                : 'Start your journey as a blood donor.' ?>
+                        </p>
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-slate-50/80 border border-slate-100 rounded-2xl p-5 text-center">
+                            <p class="mono text-3xl sm:text-4xl font-black tracking-tight text-slate-900"><?= number_format($impact_donations) ?></p>
+                            <p class="mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                <?= $impact_donations === 1 ? 'Donation' : 'Donations' ?>
+                            </p>
                         </div>
-                    <?php endforeach; ?>
+                        <div class="bg-slate-50/80 border border-slate-100 rounded-2xl p-5 text-center">
+                            <p class="mono text-3xl sm:text-4xl font-black tracking-tight text-slate-900"><?= number_format($impact_bags) ?></p>
+                            <p class="mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                <?= $impact_bags === 1 ? 'Blood Bag' : 'Blood Bags' ?>
+                            </p>
+                        </div>
+                        <div class="bg-slate-50/80 border border-slate-100 rounded-2xl p-5 text-center">
+                            <p class="mono text-3xl sm:text-4xl font-black tracking-tight text-slate-900"><?= number_format($impact_requests_supported) ?></p>
+                            <p class="mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                <?= $impact_requests_supported === 1 ? 'Request Supported' : 'Requests Supported' ?>
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>

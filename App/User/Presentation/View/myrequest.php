@@ -1,19 +1,3 @@
-<style>
-    .custom-scroll::-webkit-scrollbar {
-        width: 5px;
-    }
-    .custom-scroll::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 20px;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
-    }
-</style>
-
 <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen" id="patientRequestsContainer">
 
     <?php
@@ -117,7 +101,7 @@
             </div>
         <?php else: ?>
 
-            <div class="hidden lg:block max-h-[500px] overflow-y-auto pr-1 custom-scroll space-y-3">
+            <div class="hidden lg:block space-y-3">
                 <?php foreach ($requests as $index => $req):
                     $rid = $req['request_id'] ?? $req['id'] ?? $req['request_code'] ?? 0;
                     $hospital = $req['hospital_name'] ?? $req['location'] ?? '-';
@@ -205,7 +189,7 @@
                 <?php endforeach; ?>
             </div>
 
-            <div class="block lg:hidden max-h-[500px] overflow-y-auto pr-1 custom-scroll space-y-3.5">
+            <div class="block lg:hidden space-y-3.5">
                 <?php foreach ($requests as $index => $req):
                     $rid = $req['request_id'] ?? $req['id'] ?? $req['request_code'] ?? 0;
                     $hospital = $req['hospital_name'] ?? $req['location'] ?? '-';

@@ -4,6 +4,7 @@ namespace App\Donation\Application\UseCase;
 
 use App\Donation\Domain\Repository\DonationRepositoryInterface;
 use App\Shared\Infrastructure\Pdf\DonationCertificatePdfGenerator;
+use App\Shared\Infrastructure\Persistence\MasterDataRepository;
 
 /**
  * Generates a downloadable Donation Certificate PDF for a donor's completed donation.
@@ -12,12 +13,15 @@ class GenerateDonationCertificateUseCase
 {
     public function __construct(
         private DonationRepositoryInterface $donationRepo,
-        private DonationCertificatePdfGenerator $certificatePdfGenerator
+        private DonationCertificatePdfGenerator $certificatePdfGenerator,
+        private MasterDataRepository $masterRepo
     ) {}
 
-    public function execute(int $requestId, int $donorId): array
+    public function execute(int $donationId, int $donorId): array
     {
-        $donation = $this->donationRepo->findDonationForCertificate($requestId, $donorId);
+        $completedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 11;
+
+        $donation = $this->donationRepo->findDonationForCertificate($donationId, $donorId, $completedStatus);
 
         if (empty($donation)) {
             return ['success' => false, 'error' => 'No completed donation record found for this request.'];

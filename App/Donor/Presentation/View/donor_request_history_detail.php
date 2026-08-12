@@ -1,5 +1,6 @@
 <?php
 $request = $request ?? [];
+$donationId = (int)($donation_id ?? 0);
 $donorDetails = $donorDetails ?? null;
 $patientName = htmlspecialchars((string)($request['patient_username'] ?? $request['patient_name'] ?? 'Patient'));
 $patientEmail = htmlspecialchars((string)($request['patient_email'] ?? '-'));
@@ -33,10 +34,12 @@ $donorLocation = !empty($donorLoc) ? htmlspecialchars(implode(', ', $donorLoc)) 
         </div>
 
         <div class="flex items-center gap-2 self-start sm:self-auto">
-            <a href="/BloodConnect/public/donor/donation/certificate/view?id=<?= (int)$request['request_id'] ?>"
+            <?php if (!empty($donationId)): ?>
+            <a href="/BloodConnect/public/donor/donation/certificate/view?id=<?= (int)$donationId ?>"
                 class="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-red-700 shadow-sm transition-all active:scale-95">
                 <i class="fa-solid fa-award"></i> View Certificate
             </a>
+            <?php endif; ?>
             <a href="/BloodConnect/public/donor/history" class="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 shadow-3xs transition-all active:scale-95">
                 <i class="fa-solid fa-arrow-left"></i> Back to History
             </a>

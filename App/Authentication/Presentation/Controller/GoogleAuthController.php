@@ -218,7 +218,7 @@ class GoogleAuthController
             $user['username'] . ' logged in to system'
         );
 
-        $roleLabels = [1 => 'Admin', 2 => 'Donor', 3 => 'Patient'];
+        $roleLabels = [1 => 'Admin', 2 => 'Donor', 3 => 'Patient', 4 => 'Hospital'];
         $roleLabel = $roleLabels[(int)($user['user_type_id'] ?? 0)] ?? 'User';
         $admins = $this->notificationRepo->getAdmins();
         foreach ($admins as $admin) {
@@ -238,6 +238,7 @@ class GoogleAuthController
             1 => '/BloodConnect/public/admin/dashboard',
             2 => '/BloodConnect/public/donor/complete-profile',
             3 => '/BloodConnect/public/patient/dashboard',
+            4 => '/BloodConnect/public/hospital/dashboard',
         ];
         $redirect = $redirectMap[(int)$user['user_type_id']] ?? '/BloodConnect/public/';
         header("Location: $redirect");

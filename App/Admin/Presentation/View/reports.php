@@ -77,7 +77,7 @@ $iconSvg = [
     .report-card:hover { box-shadow: 0 20px 40px -12px rgba(206, 36, 36, 0.12); transform: translateY(-3px); }
 </style>
 
-<div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 min-h-screen transition-all opacity-0 translate-y-6 ease-out duration-700" id="reportsContainer">
+<div class="min-h-screen transition-all opacity-0 translate-y-6 ease-out duration-700" id="reportsContainer">
 
     <div class="relative bg-white border border-slate-200/60 rounded-2xl p-6 mb-8 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-6 overflow-hidden">
         <div class="flex items-center gap-4">

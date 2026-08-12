@@ -12,7 +12,16 @@ class AdminBloodStockController
     public function index(): void
     {
         $stock = $this->useCase->listAll();
-        $adjustments = $this->useCase->recentAdjustments(20);
+
+        $totalBags = 0;
+        $totalExpiringSoon = 0;
+        $totalExpired = 0;
+
+        foreach ($stock as $row) {
+            $totalBags += (int)$row['available_bags'];
+            $totalExpiringSoon += (int)($row['expiring_soon'] ?? 0);
+            $totalExpired += (int)($row['expired'] ?? 0);
+        }
 
         ob_start();
         require __DIR__ . '/../View/blood_stock.php';
@@ -20,24 +29,20 @@ class AdminBloodStockController
         require __DIR__ . '/../Layout/adminApp.php';
     }
 
-    public function adjust(): void
+    public function disposeExpired(): void
     {
-        $bloodGroup = trim((string)($_POST['blood_group'] ?? ''));
-        $quantity = abs((int)($_POST['quantity'] ?? 0));
-        $operation = ($_POST['operation'] ?? 'add') === 'deduct' ? 'deduct' : 'add';
-        $reason = trim((string)($_POST['reason'] ?? ''));
+        Session::start();
+        $adminId = (int)Session::get('user_id');
 
-        $delta = $operation === 'deduct' ? -$quantity : $quantity;
+        $result = $this->useCase->disposeExpiredBags($adminId > 0 ? $adminId : null);
 
-        $result = $this->useCase->adjust(
-            $bloodGroup,
-            $delta,
-            $reason,
-            (int)($_SESSION['user_id'] ?? 0)
-        );
-
-        Session::set('flash_message', $result['error'] ?? $result['message'] ?? '');
-        Session::set('flash_status', $result['success'] ? 'success' : 'error');
+        if ($result['success']) {
+            Session::set('flash_message', $result['disposed'] . ' expired bag(s) disposed from inventory.');
+            Session::set('flash_status', 'success');
+        } else {
+            Session::set('flash_message', 'Could not dispose expired bags.');
+            Session::set('flash_status', 'error');
+        }
 
         header('Location: /BloodConnect/public/admin/blood-stock');
         exit;

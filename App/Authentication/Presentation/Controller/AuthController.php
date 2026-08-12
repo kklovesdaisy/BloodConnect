@@ -356,6 +356,10 @@ class AuthController
                     $this->redirect('/patient/dashboard');
                     break;
 
+                case 4:
+                    $this->redirect('/hospital/dashboard');
+                    break;
+
                 default:
 
                     unset($_SESSION['user']);
