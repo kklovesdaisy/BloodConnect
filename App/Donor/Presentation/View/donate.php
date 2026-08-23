@@ -4,7 +4,8 @@ $profile = $profile ?? [];
 $eligibility = $eligibility ?? [];
 
 $bloodGroup = trim((string)($user['blood_group'] ?? ''));
-$available = (bool)($eligibility['is_available'] ?? false);
+$available = (bool)($eligibility['is_available'] ?? false)
+    && (bool)($profile['availability_state']['available'] ?? true);
 $nextEligible = (string)($eligibility['next_eligible_date'] ?? '');
 $cooldownDate = (string)($eligibility['next_available_date'] ?? '');
 

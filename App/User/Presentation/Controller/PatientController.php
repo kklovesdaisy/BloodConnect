@@ -433,6 +433,24 @@ class PatientController
         exit;
     }
 
+    public function deleteNotification()
+    {
+        $this->authGuard();
+
+        $id = (int)($_POST['notification_id'] ?? 0);
+
+        $success = $this->notificationRepo->deleteNotification($id, $this->getUserId());
+
+        header('Content-Type: application/json');
+
+        echo json_encode([
+            "success" => $success,
+            "count" => $this->notificationRepo->getUnreadCount($this->getUserId())
+        ]);
+
+        exit;
+    }
+
     public function getPatientStats(int $patientId): array
     {
         return $this->bloodRequestRepo->getPatientStats($patientId);

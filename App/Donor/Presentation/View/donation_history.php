@@ -4,6 +4,11 @@ $total_donations = (int)($total_donations ?? count($donations));
 $total_bags = (int)($total_bags ?? 0);
 $last_donation_date = $last_donation_date ?? 'No donation yet';
 $completed_status_id = (int)($completed_status_id ?? 0);
+$accepted_status_id = (int)($accepted_status_id ?? 0);
+$certificate_status_ids = array_values(array_unique(array_filter([
+    $accepted_status_id,
+    $completed_status_id,
+], fn($v) => $v > 0)));
 
 // Blood Type Helper Function matching your design ecosystem
 if (!function_exists('getHistoryBloodGroupStyle')) {
@@ -139,7 +144,7 @@ $historyCount = count($donations);
                     $bloodGroup = (string)($donation['blood_group'] ?? $donation['blood_group_needed'] ?? '-');
                     $location = !empty($donation['hospital_name']) ? (string)$donation['hospital_name'] : 'Central Stock';
                     $isRequestLinked = $requestId > 0;
-                    $isCompleted = (int)($donation['status'] ?? 0) === (int)($completed_status_id ?? 0);
+                    $isCertificateEligible = in_array((int)($donation['status'] ?? 0), $certificate_status_ids, true);
                 ?>
                     <div class="bg-white border border-slate-200/70 rounded-2xl p-4 grid grid-cols-12 items-center gap-4 opacity-0 animate-fade-in-up shadow-2xs transition-all duration-200 hover:border-slate-300" style="animation-delay: <?= $index * 0.04 ?>s;">
 
@@ -181,7 +186,7 @@ $historyCount = count($donations);
                         </div>
 
                         <div class="col-span-2 flex items-center justify-end gap-2 pr-2">
-                            <?php if ($isCompleted): ?>
+                            <?php if ($isCertificateEligible): ?>
                                 <a href="/BloodConnect/public/donor/donation/certificate/view?id=<?= $donationId ?>"
                                     class="px-4 py-2 text-xs font-bold border border-red-200 text-red-600 hover:bg-red-50 rounded-xl transition-all active:scale-95 shadow-3xs">
                                     Certificate
@@ -212,7 +217,7 @@ $historyCount = count($donations);
                     $bloodGroup = (string)($donation['blood_group'] ?? $donation['blood_group_needed'] ?? '-');
                     $location = !empty($donation['hospital_name']) ? (string)$donation['hospital_name'] : 'Central Stock';
                     $isRequestLinked = $requestId > 0;
-                    $isCompleted = (int)($donation['status'] ?? 0) === (int)($completed_status_id ?? 0);
+                    $isCertificateEligible = in_array((int)($donation['status'] ?? 0), $certificate_status_ids, true);
                 ?>
                     <div class="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-3xs opacity-0 animate-fade-in-up transform transition-all duration-200 active:scale-[0.99]" style="animation-delay: <?= $index * 0.04 ?>s;">
 
@@ -246,7 +251,7 @@ $historyCount = count($donations);
                         </div>
 
                         <div class="pt-1 flex flex-col gap-2">
-                            <?php if ($isCompleted): ?>
+                            <?php if ($isCertificateEligible): ?>
                             <a href="/BloodConnect/public/donor/donation/certificate/view?id=<?= $donationId ?>"
                                 class="flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-3xs w-full">
                                 <i class="fa-solid fa-award"></i> View Certificate

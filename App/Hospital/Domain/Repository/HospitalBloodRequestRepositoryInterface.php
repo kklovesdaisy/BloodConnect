@@ -36,6 +36,12 @@ interface HospitalBloodRequestRepositoryInterface
     public function sumPendingByHospital(int $hospitalUserId): int;
 
     /**
+     * Count of hospital stock requests the system has fully completed
+     * (each completed request counts once as a successful donation).
+     */
+    public function countCompletedRequests(): int;
+
+    /**
      * Add bags to quantity_allocated and subtract the same amount from
      * quantity_pending.
      */

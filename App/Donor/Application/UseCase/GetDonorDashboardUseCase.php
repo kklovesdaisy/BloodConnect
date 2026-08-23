@@ -33,9 +33,11 @@ class GetDonorDashboardUseCase
     public function execute(int $donorId, string $bloodGroup): array
     {
         $acceptedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'ACCEPTED') ?? 8;
+        $assignedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'ASSIGNED') ?? 42;
         $pendingRequests = $this->bloodRequestRepo->findPendingRequestsForDonor($bloodGroup, $donorId);
+        $assignedRequests = $this->bloodRequestRepo->findAssignedRequestsForDonor($donorId, (int) $assignedStatus);
         $acceptedRequests = $this->bloodRequestRepo->findAcceptedRequestsForDonor($donorId, (int) $acceptedStatus);
-        $combinedRequests = array_merge($pendingRequests, $acceptedRequests);
+        $combinedRequests = array_merge($pendingRequests, $assignedRequests, $acceptedRequests);
 
         // The real donation ledger (includes standalone donations), newest first.
         $donations = $this->donationRepo->findByDonor($donorId);
@@ -52,7 +54,8 @@ class GetDonorDashboardUseCase
         $donorDetails = $this->donorRepo->getDonorDetails($donorId);
         $profileEligibility = $donorDetails ? $this->donorEligibilityService->evaluate(
             (string) ($donorDetails['date_of_birth'] ?? ''),
-            (string) ($donorDetails['weight'] ?? '')
+            (string) ($donorDetails['weight'] ?? ''),
+            (bool) ($donorDetails['is_pregnant'] ?? 0)
         ) : ['eligible' => true, 'message' => '', 'reasons' => []];
 
         $eligibility = $this->donationEligibilityService->evaluate(

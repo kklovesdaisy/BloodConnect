@@ -182,7 +182,7 @@ class DonationRepository implements DonationRepositoryInterface
         return $map;
     }
 
-    public function findDonationForCertificate(int $donationId, int $donorId, ?int $completedStatus = null): ?array
+    public function findDonationForCertificate(int $donationId, int $donorId, array $statuses = []): ?array
     {
         $sql = "SELECT
                 dh.donation_id,
@@ -207,9 +207,10 @@ class DonationRepository implements DonationRepositoryInterface
 
         $params = [$donationId, $donorId];
 
-        if ($completedStatus !== null && $completedStatus > 0) {
-            $sql .= " AND dh.status = ?";
-            $params[] = $completedStatus;
+        if (!empty($statuses)) {
+            $placeholders = implode(',', array_fill(0, count($statuses), '?'));
+            $sql .= " AND dh.status IN ($placeholders)";
+            $params = array_merge($params, array_values($statuses));
         }
 
         $sql .= " ORDER BY dh.donation_id DESC LIMIT 1";

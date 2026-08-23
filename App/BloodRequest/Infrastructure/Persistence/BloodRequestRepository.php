@@ -419,6 +419,7 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
                 u.next_available_date,
                 d.date_of_birth,
                 d.weight,
+                d.is_pregnant,
                 d.state_region,
                 d.township,
                 latest_request.created_at AS last_donation_date
@@ -479,7 +480,8 @@ class BloodRequestRepository implements BloodRequestRepositoryInterface
 
             $profileEligibility = $donorEligibilityService->evaluate(
                 (string)($donor['date_of_birth'] ?? ''),
-                (string)($donor['weight'] ?? '')
+                (string)($donor['weight'] ?? ''),
+                (bool)($donor['is_pregnant'] ?? 0)
             );
             if (!$profileEligibility['eligible']) {
                 return false;

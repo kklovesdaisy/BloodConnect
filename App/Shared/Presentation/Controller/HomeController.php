@@ -4,18 +4,23 @@ namespace App\Shared\Presentation\Controller;
 
 use App\Shared\Presentation\View\View;
 use App\BloodRequest\Domain\Repository\BloodRequestRepositoryInterface;
+use App\Hospital\Domain\Repository\HospitalBloodRequestRepositoryInterface;
 use App\User\Domain\Repository\UserRepositoryInterface;
 
 class HomeController
 {
     public function __construct(
         private BloodRequestRepositoryInterface $bloodRequestRepo,
+        private HospitalBloodRequestRepositoryInterface $hospitalRequestRepo,
         private UserRepositoryInterface $userRepo
     ) {}
 
     public function home()
     {
-        $successfulDonations = $this->bloodRequestRepo->countAcceptedByDonors();
+        // Successful donations = donor requests accepted by recipients plus
+        // each hospital stock request the system has fully completed (counted once).
+        $successfulDonations = $this->bloodRequestRepo->countAcceptedByDonors()
+            + $this->hospitalRequestRepo->countCompletedRequests();
 
         $users = $this->userRepo->findAll();
         $totalUsers = count($users);

@@ -7,8 +7,6 @@ $db = \App\Shared\Infrastructure\Database\Database::getConnection();
 $q = AdminFilters::strParam('q');
 $statusFilter = AdminFilters::strParam('status');
 $bloodGroup = AdminFilters::strParam('blood_group');
-$dateFrom = AdminFilters::strParam('from');
-$dateTo = AdminFilters::strParam('to');
 
 $conditions = [];
 $params = [];
@@ -29,36 +27,19 @@ if ($q !== '') {
     $params[] = $like;
     $params[] = $like;
 }
-if ($dateFrom !== '') {
-    $conditions[] = 'DATE(r.created_at) >= ?';
-    $params[] = $dateFrom;
-}
-if ($dateTo !== '') {
-    $conditions[] = 'DATE(r.created_at) <= ?';
-    $params[] = $dateTo;
-}
 
 $where = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
 
 $stmt = $db->prepare("
-    SELECT COUNT(*), COALESCE(SUM(r.quantity_requested), 0), COALESCE(SUM(r.quantity_allocated), 0), COALESCE(SUM(r.quantity_pending), 0)
+    SELECT COUNT(*), COALESCE(SUM(r.quantity_requested), 0)
     FROM hospital_blood_requests r
     LEFT JOIN hospitals h ON h.user_id = r.hospital_user_id
     {$where}
 ");
 $stmt->execute($params);
-[$totalRequests, $sumRequested, $sumAllocated, $sumPending] = $stmt->fetch(\PDO::FETCH_NUM);
+[$totalRequests, $sumRequested] = $stmt->fetch(\PDO::FETCH_NUM);
 $totalRequests = (int)$totalRequests;
 $sumRequested = (int)$sumRequested;
-$sumAllocated = (int)$sumAllocated;
-$sumPending = (int)$sumPending;
-
-// Open shortfall counters (independent of filters)
-$openStmt = $db->query("
-    SELECT COUNT(*) FROM hospital_blood_requests
-    WHERE status IN ('PENDING', 'PARTIAL') AND quantity_pending > 0
-");
-$openCount = (int)$openStmt->fetchColumn();
 
 $adminPagination = AdminFilters::paginate($totalRequests, 20);
 
@@ -161,21 +142,6 @@ foreach (AdminFilters::bloodGroups($db) as $code => $label) {
                 <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Bags Requested</span>
                 <span class="text-lg font-extrabold tracking-tight mt-0.5 mono"><?= sprintf('%02d', $sumRequested) ?></span>
             </div>
-            <div class="w-px h-10 bg-slate-700/60"></div>
-            <div class="flex flex-col">
-                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Allocated</span>
-                <span class="text-lg font-extrabold tracking-tight mt-0.5 mono text-emerald-400"><?= sprintf('%02d', $sumAllocated) ?></span>
-            </div>
-            <div class="w-px h-10 bg-slate-700/60"></div>
-            <div class="flex flex-col">
-                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Pending</span>
-                <span class="text-lg font-extrabold tracking-tight mt-0.5 mono text-amber-400"><?= sprintf('%02d', $sumPending) ?></span>
-            </div>
-            <div class="w-px h-10 bg-slate-700/60"></div>
-            <div class="flex flex-col">
-                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Open Shortfalls</span>
-                <span class="text-lg font-extrabold tracking-tight mt-0.5 mono text-red-400"><?= sprintf('%02d', $openCount) ?></span>
-            </div>
         </div>
     </div>
 
@@ -209,8 +175,6 @@ foreach (AdminFilters::bloodGroups($db) as $code => $label) {
                 'label' => 'Blood Group',
                 'options' => $bloodGroupOptions,
             ],
-            ['type' => 'date', 'name' => 'from', 'label' => 'From'],
-            ['type' => 'date', 'name' => 'to', 'label' => 'To'],
         ],
     ];
     require __DIR__ . '/../../../Shared/Presentation/View/partials/admin_filter_bar.php';

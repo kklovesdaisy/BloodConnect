@@ -188,18 +188,6 @@ $pageTitle = match ($filter) {
                 'label' => 'User Type',
                 'options' => ['1' => 'Admin', '2' => 'Donor', '3' => 'Patient'],
             ],
-            [
-                'type' => 'select',
-                'name' => 'status',
-                'label' => 'Status',
-                'options' => ['1' => 'Active', '0' => 'Inactive'],
-            ],
-            [
-                'type' => 'select',
-                'name' => 'blood_group',
-                'label' => 'Blood Group',
-                'options' => AdminFilters::bloodGroups($db),
-            ],
         ],
     ];
     require __DIR__ . '/../../../Shared/Presentation/View/partials/admin_filter_bar.php';

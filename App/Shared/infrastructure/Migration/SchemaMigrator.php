@@ -31,6 +31,7 @@ class SchemaMigrator
         $this->ensureColumn($db, 'donors', 'date_of_birth', 'DATE DEFAULT NULL AFTER weight');
         $this->ensureColumn($db, 'donors', 'state_region', 'VARCHAR(100) DEFAULT NULL AFTER date_of_birth');
         $this->ensureColumn($db, 'donors', 'township', 'VARCHAR(100) DEFAULT NULL AFTER state_region');
+        $this->ensureColumn($db, 'donors', 'is_pregnant', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER township');
         $this->ensureColumn($db, 'users', 'next_available_date', 'DATETIME DEFAULT NULL');
 
         // Blood stock inventory (one row per blood group, keyed by label e.g. 'A+')

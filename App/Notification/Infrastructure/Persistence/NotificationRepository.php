@@ -170,6 +170,21 @@ class NotificationRepository implements \App\Notification\Domain\Repository\Noti
         return (int)($result['count'] ?? 0);
     }
 
+    public function deleteNotification(int $notificationId, int $userId): bool
+    {
+        if ($notificationId <= 0 || $userId <= 0) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare("
+            DELETE FROM notifications
+            WHERE notification_id = ?
+              AND user_id = ?
+        ");
+
+        return $stmt->execute([$notificationId, $userId]);
+    }
+
     public function getAdmins(): array
     {
         $stmt = $this->db->prepare("

@@ -66,6 +66,11 @@ $container->singleton(
     \App\Hospital\Infrastructure\Persistence\HospitalBloodRequestRepository::class
 );
 
+$container->singleton(
+    \App\Hospital\Domain\Repository\HospitalBloodStockRepositoryInterface::class,
+    \App\Hospital\Infrastructure\Persistence\HospitalBloodStockRepository::class
+);
+
 // ===== Shared Service Bindings =====
 $container->singleton(
     \App\Shared\Infrastructure\Persistence\MasterDataRepository::class,

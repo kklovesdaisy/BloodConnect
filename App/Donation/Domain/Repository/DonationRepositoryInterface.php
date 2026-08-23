@@ -23,7 +23,14 @@ interface DonationRepositoryInterface
     public function findByDonor(int $donorId): array;
     public function updateStatusByRequestId(int $requestId, int $status): bool;
     public function countSuccessfulDonations(?int $statusId = null): int;
-    public function findDonationForCertificate(int $donationId, int $donorId, ?int $completedStatus = null): ?array;
+    /**
+     * Locate a donor's donation eligible for a certificate. A certificate is
+     * available as soon as a donation is recorded (ACCEPTED or COMPLETED),
+     * so the donor can always view/download it right after donating.
+     *
+     * @param int[] $statuses certificate-eligible REQUEST_STATUS ids
+     */
+    public function findDonationForCertificate(int $donationId, int $donorId, array $statuses = []): ?array;
 
     /**
      * Total donated bags (completed donations) per donor blood group.

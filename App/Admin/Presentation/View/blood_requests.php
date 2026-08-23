@@ -16,10 +16,7 @@ use App\Shared\Helpers\AdminFilters;
 $filter = $_GET['filter'] ?? '';
 $q = AdminFilters::strParam('q');
 $reqStatus = AdminFilters::strParam('req_status');
-$bloodGroup = AdminFilters::strParam('blood_group');
 $urgency = AdminFilters::strParam('urgency');
-$dateFrom = AdminFilters::strParam('from');
-$dateTo = AdminFilters::strParam('to');
 
 /* Fetch blood requests from the database */
 $requests = [];
@@ -45,11 +42,6 @@ try {
         $conditions[] = 'r.status = 48';
     }
 
-    if ($bloodGroup !== '') {
-        $conditions[] = 'r.blood_group_needed = ?';
-        $params[] = $bloodGroup;
-    }
-
     if ($urgency !== '') {
         $conditions[] = 'UPPER(r.urgency) = ?';
         $params[] = strtoupper($urgency);
@@ -63,16 +55,6 @@ try {
         $params[] = $like;
         $params[] = $like;
         $params[] = $like;
-    }
-
-    if ($dateFrom !== '') {
-        $conditions[] = 'DATE(r.created_at) >= ?';
-        $params[] = $dateFrom;
-    }
-
-    if ($dateTo !== '') {
-        $conditions[] = 'DATE(r.created_at) <= ?';
-        $params[] = $dateTo;
     }
 
     $where = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
@@ -247,14 +229,6 @@ function getBloodTypeClass($type)
                     'Critical' => 'Critical',
                 ],
             ],
-            [
-                'type' => 'select',
-                'name' => 'blood_group',
-                'label' => 'Blood Group',
-                'options' => AdminFilters::bloodGroups($db),
-            ],
-            ['type' => 'date', 'name' => 'from', 'label' => 'From'],
-            ['type' => 'date', 'name' => 'to', 'label' => 'To'],
         ],
     ];
     require __DIR__ . '/../../../Shared/Presentation/View/partials/admin_filter_bar.php';

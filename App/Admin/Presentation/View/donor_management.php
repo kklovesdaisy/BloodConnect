@@ -26,7 +26,6 @@ $q = AdminFilters::strParam('q');
 $availability = AdminFilters::strParam('availability');
 $bloodGroup = AdminFilters::strParam('blood_group');
 $statusFilter = AdminFilters::strParam('status');
-$location = AdminFilters::strParam('location');
 
 /*
 |--------------------------------------------------------------------------
@@ -43,16 +42,12 @@ if ($availability === 'available') {
     $where .= ' AND u.available = 1 AND u.is_active = 1';
 } elseif ($availability === 'unavailable') {
     $where .= ' AND u.available = 0 AND u.is_active = 1';
-} elseif ($availability === 'inactive') {
-    $where .= ' AND u.is_active != 1';
+} else {
+    $where .= ' AND u.is_active = 1';
 }
 if ($statusFilter !== '') {
     $where .= ' AND u.is_active = ?';
     $params[] = $statusFilter === '1' ? 1 : 0;
-}
-if ($location !== '') {
-    $where .= ' AND d.state_region = ?';
-    $params[] = $location;
 }
 if ($bloodGroup !== '') {
     $where .= ' AND (u.blood_group = ? OR md.label = ?)';
@@ -199,13 +194,6 @@ $pageTitle = match ($filter) {
     </div>
 
     <?php
-    $locationStmt = $db->prepare("SELECT DISTINCT state_region FROM donors WHERE state_region IS NOT NULL AND state_region <> '' ORDER BY state_region");
-    $locationStmt->execute();
-    $donorLocations = [];
-    foreach ($locationStmt->fetchAll(\PDO::FETCH_COLUMN) as $loc) {
-        $donorLocations[(string)$loc] = (string)$loc;
-    }
-
     $adminFilterConfig = [
         'action' => '/BloodConnect/public/admin/donor-management',
         'search_name' => 'q',
@@ -218,26 +206,7 @@ $pageTitle = match ($filter) {
                 'options' => [
                     'available' => 'Available',
                     'unavailable' => 'Unavailable',
-                    'inactive' => 'Inactive',
                 ],
-            ],
-            [
-                'type' => 'select',
-                'name' => 'status',
-                'label' => 'Status',
-                'options' => ['1' => 'Active', '0' => 'Inactive'],
-            ],
-            [
-                'type' => 'select',
-                'name' => 'blood_group',
-                'label' => 'Blood Group',
-                'options' => AdminFilters::bloodGroups($db),
-            ],
-            [
-                'type' => 'select',
-                'name' => 'location',
-                'label' => 'Location',
-                'options' => $donorLocations,
             ],
         ],
     ];

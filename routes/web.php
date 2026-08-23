@@ -62,6 +62,11 @@ $router->get('/terms-of-service', [HomeController::class, 'terms']);
 $router->get('/register', [AuthController::class, 'showRegister']);
 $router->get('/login', [AuthController::class, 'showLogin']);
 $router->post('/login', [AuthController::class, 'login']);
+
+// Admin console login (separate page; same auth flow)
+$router->get('/admin/login', [AuthController::class, 'showAdminLogin']);
+$router->post('/admin/login', [AuthController::class, 'login']);
+
 $router->get('/forgot-password', [AuthController::class, 'showForgotPassword']);
 $router->post('/forgot-password', [AuthController::class, 'sendPasswordResetOtp']);
 $router->get('/forgot-password/verify', [AuthController::class, 'showForgotPasswordOtp']);
@@ -102,6 +107,7 @@ $router->group(['middleware' => ['auth', 'can:notification.view']], function (Ro
     $router->post('/notification/mark-read', [PatientController::class, 'markNotificationRead']);
     $router->post('/notification/mark-all-read', [PatientController::class, 'markAllNotificationsRead']);
     $router->get('/notification/unread-count', [PatientController::class, 'unreadCount']);
+    $router->post('/notification/delete', [PatientController::class, 'deleteNotification']);
 });
 
 /*

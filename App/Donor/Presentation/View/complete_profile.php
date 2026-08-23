@@ -37,7 +37,7 @@ $isUpdate = $isUpdate ?? false;
             </h1>
             <p class="text-sm text-slate-500 mt-1.5 max-w-md mx-auto">
                 <?= $isUpdate
-                    ? 'Update your weight below. Date of birth cannot be changed once set.'
+                    ? 'Update your age, weight and pregnancy status below.'
                     : 'Please provide your details so we can verify your donor eligibility.' ?>
             </p>
         </div>
@@ -60,28 +60,30 @@ $isUpdate = $isUpdate ?? false;
         <?php endif; ?>
 
         <form method="POST" action="" class="space-y-6">
-            <!-- Date of Birth -->
+            <!-- Age -->
+            <?php
+            $storedDob = trim((string)($donorDetails['date_of_birth'] ?? ''));
+            $prefillAge = (string)($old['age'] ?? '');
+            if ($prefillAge === '' && $storedDob !== '') {
+                try {
+                    $prefillAge = (string)(new \DateTime($storedDob))->diff(new \DateTime())->y;
+                } catch (\Exception $e) {
+                    $prefillAge = '';
+                }
+            }
+            ?>
             <div>
-                <label for="date_of_birth" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Date of Birth
+                <label for="age" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Age (years)
                 </label>
-                <?php if ($isUpdate && !empty($donorDetails['date_of_birth'])): ?>
-                    <div class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 shrink-0">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                        </svg>
-                        <span><?= htmlspecialchars($donorDetails['date_of_birth']) ?></span>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-1">Date of birth cannot be changed after saving.</p>
-                <?php else: ?>
-                    <input type="date" name="date_of_birth" id="date_of_birth"
-                        value="<?= htmlspecialchars($old['date_of_birth'] ?? $donorDetails['date_of_birth'] ?? '') ?>"
-                        max="<?= date('Y-m-d', strtotime('-18 years')) ?>"
-                        class="profile-input w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 <?= isset($errors['date_of_birth']) ? 'border-red-400 bg-red-50' : '' ?>">
-                    <?php if (isset($errors['date_of_birth'])): ?>
-                        <p class="text-xs text-red-500 mt-1 font-medium"><?= $errors['date_of_birth'] ?></p>
-                    <?php endif; ?>
+                <input type="number" name="age" id="age" min="1" max="120" required
+                    value="<?= htmlspecialchars($prefillAge) ?>"
+                    placeholder="e.g. 25"
+                    class="profile-input w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 <?= isset($errors['age']) ? 'border-red-400 bg-red-50' : '' ?>">
+                <?php if (isset($errors['age'])): ?>
+                    <p class="text-xs text-red-500 mt-1 font-medium"><?= $errors['age'] ?></p>
                 <?php endif; ?>
+                <p class="text-xs text-slate-400 mt-1">Must be between 18 and 65 years old for blood donation eligibility.</p>
             </div>
 
             <!-- Weight -->
@@ -100,6 +102,36 @@ $isUpdate = $isUpdate ?? false;
                     <p class="text-xs text-red-500 mt-1 font-medium"><?= $errors['weight'] ?></p>
                 <?php endif; ?>
                 <p class="text-xs text-slate-400 mt-1">Minimum 50 kg is required for blood donation eligibility.</p>
+            </div>
+
+            <!-- Pregnancy Status -->
+            <?php
+            $selectedPregnancy = (string)($old['pregnancy_status'] ?? '');
+            if ($selectedPregnancy === '') {
+                $selectedPregnancy = !empty($donorDetails['is_pregnant']) ? 'pregnant' : '';
+            }
+            ?>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Pregnancy Status
+                </label>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="pregnancy-option cursor-pointer border-2 rounded-xl px-3 py-2.5 text-center transition-all <?= $selectedPregnancy === 'not_pregnant' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200' ?>">
+                        <input type="radio" name="pregnancy_status" value="not_pregnant"
+                            class="hidden pregnancy-radio" <?= $selectedPregnancy === 'not_pregnant' ? 'checked' : '' ?> required>
+                        <span class="block text-sm font-bold text-slate-900">Not Pregnant</span>
+                        <span class="block text-[9px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider">Eligible to donate</span>
+                    </label>
+                    <label class="pregnancy-option cursor-pointer border-2 rounded-xl px-3 py-2.5 text-center transition-all <?= $selectedPregnancy === 'pregnant' ? 'border-amber-500 bg-amber-50' : 'border-slate-200' ?>">
+                        <input type="radio" name="pregnancy_status" value="pregnant"
+                            class="hidden pregnancy-radio" <?= $selectedPregnancy === 'pregnant' ? 'checked' : '' ?>>
+                        <span class="block text-sm font-bold text-slate-900">Pregnant</span>
+                        <span class="block text-[9px] font-bold text-slate-500 mt-0.5 uppercase tracking-wider">Cannot donate</span>
+                    </label>
+                </div>
+                <?php if (isset($errors['pregnancy_status'])): ?>
+                    <p class="text-xs text-red-500 mt-1 font-medium"><?= $errors['pregnancy_status'] ?></p>
+                <?php endif; ?>
             </div>
 
             <!-- State/Region + Township -->
@@ -130,7 +162,7 @@ $isUpdate = $isUpdate ?? false;
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <?= $isUpdate ? 'Update Profile' : 'Save & Continue' ?>
+                    <?= $isUpdate ? 'Save & Continue' : 'Save & Continue' ?>
                 </button>
             </div>
         </form>
@@ -162,6 +194,37 @@ $isUpdate = $isUpdate ?? false;
                     <p class="text-xs text-slate-500">Minimum 50 kg required</p>
                 </div>
             </div>
+            <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500 shrink-0 mt-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-700">Pregnancy</p>
+                    <p class="text-xs text-slate-500">Pregnant donors are not eligible</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.querySelectorAll('.pregnancy-option').forEach(label => {
+        const radio = label.querySelector('input[type="radio"]');
+        if (!radio) return;
+        radio.addEventListener('change', () => {
+            document.querySelectorAll('.pregnancy-option').forEach(l => {
+                l.classList.remove('border-emerald-500', 'bg-emerald-50', 'border-amber-500', 'bg-amber-50');
+                l.classList.add('border-slate-200');
+            });
+            const active = radio.value === 'not_pregnant'
+                ? ['border-emerald-500', 'bg-emerald-50']
+                : ['border-amber-500', 'bg-amber-50'];
+            label.classList.remove('border-slate-200');
+            label.classList.add(...active);
+        });
+    });
+
+    document.querySelector('.pregnancy-radio:checked')?.dispatchEvent(new Event('change'));
+</script>

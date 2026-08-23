@@ -7,8 +7,6 @@ $db = \App\Shared\Infrastructure\Database\Database::getConnection();
 $q = AdminFilters::strParam('q');
 $statusFilter = AdminFilters::strParam('status');
 $bloodGroup = AdminFilters::strParam('blood_group');
-$dateFrom = AdminFilters::strParam('from');
-$dateTo = AdminFilters::strParam('to');
 $tab = AdminFilters::strParam('tab');
 $isHospitalTab = ($tab === 'hospital');
 
@@ -32,14 +30,6 @@ if ($isHospitalTab) {
         $params[] = $like;
         $params[] = $like;
         $params[] = $like;
-    }
-    if ($dateFrom !== '') {
-        $conditions[] = 'DATE(r.created_at) >= ?';
-        $params[] = $dateFrom;
-    }
-    if ($dateTo !== '') {
-        $conditions[] = 'DATE(r.created_at) <= ?';
-        $params[] = $dateTo;
     }
 
     $where = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
@@ -105,14 +95,6 @@ if ($isHospitalTab) {
         $params[] = $like;
         $params[] = $like;
         $params[] = $like;
-    }
-    if ($dateFrom !== '') {
-        $conditions[] = 'dh.donation_date >= ?';
-        $params[] = $dateFrom;
-    }
-    if ($dateTo !== '') {
-        $conditions[] = 'dh.donation_date <= ?';
-        $params[] = $dateTo;
     }
 
     $where = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
@@ -245,13 +227,6 @@ foreach (AdminFilters::bloodGroups($db) as $code => $label) {
 
         <div class="flex items-center gap-4 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-lg border border-slate-800 self-start md:self-auto">
             <div class="flex flex-col">
-                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest"><?= $isHospitalTab ? 'Allocation Records' : 'Ledger Entries' ?></span>
-                <span class="text-lg font-extrabold tracking-tight mt-0.5 mono">
-                    <?= sprintf('%02d', $isHospitalTab ? $totalAllocations : $totalDonations) ?> <span class="text-xs text-slate-500 font-normal">records</span>
-                </span>
-            </div>
-            <div class="w-px h-10 bg-slate-700/60"></div>
-            <div class="flex flex-col">
                 <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest"><?= $isHospitalTab ? 'Bags Allocated' : 'Total Bags' ?></span>
                 <span class="text-lg font-extrabold tracking-tight mt-0.5 mono text-red-400">
                     <?= sprintf('%02d', $isHospitalTab ? $totalAllocatedBags : $totalBags) ?> <span class="text-xs text-slate-500 font-normal">bags</span>
@@ -305,8 +280,6 @@ foreach (AdminFilters::bloodGroups($db) as $code => $label) {
                 'label' => 'Blood Group',
                 'options' => $bloodGroupOptions,
             ],
-            ['type' => 'date', 'name' => 'from', 'label' => 'From'],
-            ['type' => 'date', 'name' => 'to', 'label' => 'To'],
         ],
     ];
     require __DIR__ . '/../../../Shared/Presentation/View/partials/admin_filter_bar.php';

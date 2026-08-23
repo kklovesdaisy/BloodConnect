@@ -2,30 +2,32 @@
 
 namespace App\Hospital\Application\UseCase;
 
-use App\BloodStock\Domain\Repository\BloodStockRepositoryInterface;
 use App\Hospital\Domain\Repository\HospitalBloodRequestRepositoryInterface;
+use App\Hospital\Domain\Repository\HospitalBloodStockRepositoryInterface;
 use App\Hospital\Domain\Repository\HospitalRepositoryInterface;
 use App\Notification\Domain\Repository\NotificationRepositoryInterface;
 
 /**
  * Builds the data required by the hospital dashboard: the hospital profile,
- * an enriched blood-stock overview (available/reserved/expiring), stock and
- * request alerts, the hospital's own request summary with progress, the
- * recent stock activity feed, and a preview of recent notifications.
+ * the hospital's OWN blood-stock overview (bags the system allocated against
+ * this hospital's requests), stock and request alerts, the hospital's own
+ * request summary with progress, and a preview of recent notifications.
  */
 class HospitalDashboardUseCase
 {
+    private const ALL_BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
     public function __construct(
         private HospitalRepositoryInterface $hospitalRepo,
         private HospitalBloodRequestRepositoryInterface $requestRepo,
-        private BloodStockRepositoryInterface $stockRepo,
+        private HospitalBloodStockRepositoryInterface $hospitalStockRepo,
         private NotificationRepositoryInterface $notificationRepo
     ) {}
 
     public function execute(int $hospitalUserId): array
     {
         $profile = $this->hospitalRepo->findByUserId($hospitalUserId);
-        $stock = $this->stockRepo->findAll();
+        $stock = $this->hospitalOwnStock($hospitalUserId);
         $requests = $this->requestRepo->findByHospital($hospitalUserId);
 
         $totalRequested = 0;
@@ -38,7 +40,7 @@ class HospitalDashboardUseCase
             $totalPending += (int)$request['quantity_pending'];
         }
 
-        $enrichedStock = $this->enrichStock($stock);
+        $enrichedStock = $this->enrichStock($hospitalUserId, $stock);
         $alerts = $this->buildAlerts($stock, $requests);
         $recentNotifications = array_slice(
             $this->notificationRepo->findByUserId($hospitalUserId),
@@ -58,19 +60,42 @@ class HospitalDashboardUseCase
             'recent_requests'      => array_slice($requests, 0, 5),
             'hospital_name'        => $profile['hospital_name'] ?? '',
             'alerts'               => $alerts,
-            'recent_adjustments'   => $this->stockRepo->findRecentAdjustments(6),
             'recent_notifications' => $recentNotifications,
         ];
     }
 
     /**
-     * Augment each stock row with reserved/expiring info, a relative "last
-     * updated" label and a 0-100 level indicator so staff can scan quickly.
+     * The hospital's own inventory: bags the system allocated against this
+     * hospital's stock requests that are still within their shelf life.
+     * Always returns all 8 blood groups so the UI stays consistent.
      */
-    private function enrichStock(array $stock): array
+    private function hospitalOwnStock(int $hospitalUserId): array
     {
-        $expiry = $this->stockRepo->findExpiryOverview();
-        $reserved = $this->stockRepo->findReservedOverview();
+        $byGroup = [];
+        foreach ($this->hospitalStockRepo->findAllByHospital($hospitalUserId) as $row) {
+            $byGroup[(string)$row['blood_group']] = $row;
+        }
+
+        $stock = [];
+        foreach (self::ALL_BLOOD_GROUPS as $group) {
+            $stock[] = $byGroup[$group] ?? [
+                'blood_group'    => $group,
+                'available_bags' => 0,
+                'last_updated'   => '',
+            ];
+        }
+
+        return $stock;
+    }
+
+    /**
+     * Augment each hospital stock row with expiry info and a 0-100 level
+     * indicator so staff can scan quickly. Reserved does not apply here:
+     * every counted bag is already owned by the hospital.
+     */
+    private function enrichStock(int $hospitalUserId, array $stock): array
+    {
+        $expiry = $this->hospitalStockRepo->findExpiryOverviewByHospital($hospitalUserId);
 
         $maxStock = 1;
         foreach ($stock as $row) {
@@ -85,7 +110,7 @@ class HospitalDashboardUseCase
             $enriched[] = [
                 'blood_group'      => $group,
                 'available_bags'   => $bags,
-                'reserved_bags'    => (int)($reserved[$group] ?? 0),
+                'reserved_bags'    => 0,
                 'expiring_soon'    => (int)($expiry[$group]['expiring_soon'] ?? 0),
                 'expired'          => (int)($expiry[$group]['expired'] ?? 0),
                 'oldest_expiry'    => (string)($expiry[$group]['oldest_expiry'] ?? ''),
@@ -99,8 +124,9 @@ class HospitalDashboardUseCase
     }
 
     /**
-     * Derive a compact alert feed: critical/low stock, still-pending request
+     * Derive the alert feed: critical/low stock, still-pending request
      * quantities and requests that could be fulfilled from current stock.
+     * No cap is applied — every alert is always returned.
      */
     private function buildAlerts(array $stock, array $requests): array
     {
@@ -169,7 +195,7 @@ class HospitalDashboardUseCase
             }
         }
 
-        return array_slice($alerts, 0, 8);
+        return $alerts;
     }
 
     private function relativeTime(string $datetime): string

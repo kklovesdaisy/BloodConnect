@@ -20,6 +20,8 @@ use App\User\Domain\Repository\UserRepositoryInterface;
  * Business rules:
  * - The donor must have a blood group set.
  * - A donor can donate at most 2 bags per donation.
+ * - Pregnancy eligibility is enforced via the donor profile (is_pregnant)
+ *   and the availability status, not per-donation.
  * - The donor must be eligible (3-month cooldown via the availability window).
  * - Inside one transaction: the donation is recorded, the donated bags are
  *   added to central stock, and any open hospital stock-request shortfalls for
@@ -74,13 +76,13 @@ class RecordDonationUseCase
             $availabilityState['next_available_date']
         );
 
-        if (empty($eligibility['is_available'])) {
+        if (empty($eligibility['is_available']) || empty($availabilityState['available'])) {
             return [
                 'success' => false,
                 'error' => 'You are not eligible to donate right now. '
                     . ($eligibility['next_eligible_date'] !== ''
                         ? 'You will be eligible again on ' . $eligibility['next_eligible_date'] . '.'
-                        : 'Please check your profile eligibility.'),
+                        : 'Please check your profile eligibility (age 18-65, minimum 50kg, not pregnant).'),
             ];
         }
 

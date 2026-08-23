@@ -53,7 +53,8 @@ class AcceptBloodRequestUseCase
         if ($donorProfile) {
             $profileEligibility = $this->donorEligibilityService->evaluate(
                 (string)($donorProfile['date_of_birth'] ?? ''),
-                (string)($donorProfile['weight'] ?? '')
+                (string)($donorProfile['weight'] ?? ''),
+                (bool)($donorProfile['is_pregnant'] ?? 0)
             );
             if (!$profileEligibility['eligible']) {
                 return ['success' => false, 'error' => 'You cannot accept this request: ' . implode(', ', $profileEligibility['reasons'])];
@@ -67,8 +68,8 @@ class AcceptBloodRequestUseCase
         $lastDonationDate = !empty($lastDonation[0]['created_at']) ? (string)$lastDonation[0]['created_at'] : '';
 
         $eligibility = $this->eligibilityService->evaluate($lastDonationDate, $availability['next_available_date']);
-        if (!$eligibility['is_available']) {
-            return ['success' => false, 'error' => 'You are not eligible to donate yet. Next eligible date: ' . $eligibility['next_eligible_date']];
+        if (!$eligibility['is_available'] || empty($availability['available'])) {
+            return ['success' => false, 'error' => 'You are not eligible to donate yet. Please check your profile eligibility or next eligible date.'];
         }
 
         $existingAccepted = $this->bloodRequestRepo->findAcceptedRequestsForDonor($donorId, $acceptedStatus);

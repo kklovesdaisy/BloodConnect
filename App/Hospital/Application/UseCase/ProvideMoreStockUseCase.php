@@ -77,6 +77,31 @@ class ProvideMoreStockUseCase
             'STOCK_REQUEST'
         );
 
+        $hospitalName = $request['hospital_name'] ?? "user #{$hospitalUserId}";
+        if ($newPending <= 0) {
+            $adminMsg = sprintf(
+                'Request %s for %s (%s) now fully fulfilled. %d bag(s) provided.',
+                $request['request_code'],
+                $hospitalName,
+                $group,
+                $alloc
+            );
+        } else {
+            $adminMsg = sprintf(
+                'Request %s for %s (%s): %d more bag(s) provided; %d bag(s) still pending.',
+                $request['request_code'],
+                $hospitalName,
+                $group,
+                $alloc,
+                $newPending
+            );
+        }
+        $this->notificationRepo->notifyAdmins(
+            'Hospital Blood Request Top-Up',
+            $adminMsg,
+            'STOCK_REQUEST'
+        );
+
         $this->activityLogger->log(
             $adminId,
             $adminName,

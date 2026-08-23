@@ -163,10 +163,6 @@ $recent_activities = $recent_activities ?? [];
                             </span>
                         <?php endif; ?>
                     </div>
-                    <a href="/BloodConnect/public/donor/blood-requests"
-                        class="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-700 hover:gap-2 transition-all duration-200 shrink-0">
-                        View All <span aria-hidden="true">&rarr;</span>
-                    </a>
                 </div>
 
                 <?php if (empty($blood_requests)): ?>
@@ -244,14 +240,6 @@ $recent_activities = $recent_activities ?? [];
                                         <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100">
                                             ✓ Processed
                                         </span>
-                                    <?php else: ?>
-                                        <form method="POST" action="/BloodConnect/public/donor/request/accept" class="inline">
-                                            <input type="hidden" name="request_id" value="<?= (int)$request['request_id'] ?>">
-                                            <button type="submit"
-                                                class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition-all duration-200 active:scale-[0.98]">
-                                                Respond
-                                            </button>
-                                        </form>
                                     <?php endif; ?>
                                 </div>
                             </div>

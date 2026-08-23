@@ -208,6 +208,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_save_profile']
                     </div>
                 </div>
 
+                <?php
+                $storedPregnancy = $donorDetails['is_pregnant'] ?? null;
+                $selectedPregnancy = ($storedPregnancy === null || $storedPregnancy === '')
+                    ? ''
+                    : (!empty($storedPregnancy) ? 'pregnant' : 'not_pregnant');
+                ?>
+                <div class="space-y-1.5 mt-4">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Pregnancy Status</label>
+                    <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                        <label class="pregnancy-option cursor-pointer border-2 rounded-lg px-3 py-2 text-center transition-all <?= $selectedPregnancy === 'not_pregnant' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200/80 bg-slate-50 hover:border-emerald-300' ?>">
+                            <input type="radio" name="pregnancy_status" value="not_pregnant"
+                                class="hidden pregnancy-radio" <?= $selectedPregnancy === 'not_pregnant' ? 'checked' : '' ?> required>
+                            <span class="block text-xs font-bold text-slate-800"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i>Not Pregnant</span>
+                            <span class="block text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">Eligible to donate</span>
+                        </label>
+                        <label class="pregnancy-option cursor-pointer border-2 rounded-lg px-3 py-2 text-center transition-all <?= $selectedPregnancy === 'pregnant' ? 'border-amber-500 bg-amber-50' : 'border-slate-200/80 bg-slate-50 hover:border-amber-300' ?>">
+                            <input type="radio" name="pregnancy_status" value="pregnant"
+                                class="hidden pregnancy-radio" <?= $selectedPregnancy === 'pregnant' ? 'checked' : '' ?>>
+                            <span class="block text-xs font-bold text-slate-800"><i class="fa-solid fa-baby text-amber-500 mr-1"></i>Pregnant</span>
+                            <span class="block text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">Cannot donate</span>
+                        </label>
+                    </div>
+                    <p class="text-xs text-slate-400">Pregnant donors are temporarily ineligible and will be marked Unavailable.</p>
+                </div>
+
                 <div class="space-y-1.5 mt-4">
                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Address / Location</label>
                     <div class="relative rounded-xl transition-all focus-within:ring-2 focus-within:ring-red-500/20">
@@ -272,6 +297,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_save_profile']
             if (this.value.length > 11) {
                 this.value = this.value.substring(0, 11);
             }
+        });
+
+        document.querySelectorAll('.pregnancy-option').forEach(label => {
+            const radio = label.querySelector('input[type="radio"]');
+            if (!radio) return;
+            radio.addEventListener('change', () => {
+                document.querySelectorAll('.pregnancy-option').forEach(l => {
+                    l.classList.remove('border-emerald-500', 'bg-emerald-50', 'border-amber-500', 'bg-amber-50');
+                    l.classList.add('border-slate-200/80');
+                });
+                const active = radio.value === 'not_pregnant'
+                    ? ['border-emerald-500', 'bg-emerald-50']
+                    : ['border-amber-500', 'bg-amber-50'];
+                label.classList.remove('border-slate-200/80');
+                label.classList.add(...active);
+            });
         });
     </script>
 </body>

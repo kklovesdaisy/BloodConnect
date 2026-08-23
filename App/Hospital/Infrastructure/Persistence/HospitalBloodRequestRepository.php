@@ -103,6 +103,15 @@ class HospitalBloodRequestRepository implements HospitalBloodRequestRepositoryIn
         return (int)$stmt->fetchColumn();
     }
 
+    public function countCompletedRequests(): int
+    {
+        $stmt = $this->db->query(
+            "SELECT COUNT(*) FROM hospital_blood_requests WHERE status = 'COMPLETED'"
+        );
+
+        return (int)$stmt->fetchColumn();
+    }
+
     public function allocateBags(int $requestId, int $bags): bool
     {
         $stmt = $this->db->prepare(

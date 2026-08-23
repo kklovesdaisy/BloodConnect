@@ -49,7 +49,8 @@ class AssignDonorsUseCase
             if ($donorDetails) {
                 $result = $this->donorEligibilityService->evaluate(
                     (string)($donorDetails['date_of_birth'] ?? ''),
-                    (string)($donorDetails['weight'] ?? '')
+                    (string)($donorDetails['weight'] ?? ''),
+                    (bool)($donorDetails['is_pregnant'] ?? 0)
                 );
                 if ($result['eligible']) {
                     $validDonorIds[] = (int)$donorId;

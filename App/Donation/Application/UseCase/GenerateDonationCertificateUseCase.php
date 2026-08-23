@@ -19,9 +19,14 @@ class GenerateDonationCertificateUseCase
 
     public function execute(int $donationId, int $donorId): array
     {
-        $completedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 11;
+        // A certificate is available as soon as a donation is recorded:
+        // ACCEPTED (donor committed/donated) or COMPLETED (admin confirmed).
+        $statuses = array_filter(array_unique([
+            $this->masterRepo->getId('REQUEST_STATUS', 'ACCEPTED') ?? 8,
+            $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 9,
+        ]));
 
-        $donation = $this->donationRepo->findDonationForCertificate($donationId, $donorId, $completedStatus);
+        $donation = $this->donationRepo->findDonationForCertificate($donationId, $donorId, $statuses);
 
         if (empty($donation)) {
             return ['success' => false, 'error' => 'No completed donation record found for this request.'];

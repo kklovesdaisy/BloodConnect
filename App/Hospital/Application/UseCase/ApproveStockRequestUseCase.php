@@ -70,6 +70,32 @@ class ApproveStockRequestUseCase
             'STOCK_REQUEST'
         );
 
+        $hospitalName = $request['hospital_name'] ?? "user #{$hospitalUserId}";
+        if ($newPending === 0) {
+            $adminMsg = sprintf(
+                'Request %s for %s (%s) fully fulfilled. %d bag(s) allocated.',
+                $request['request_code'],
+                $hospitalName,
+                $group,
+                $alloc
+            );
+        } else {
+            $adminMsg = sprintf(
+                'Request %s for %s (%s): %d of %d bag(s) allocated; %d bag(s) still pending.',
+                $request['request_code'],
+                $hospitalName,
+                $group,
+                $alloc,
+                $requested,
+                $newPending
+            );
+        }
+        $this->notificationRepo->notifyAdmins(
+            'Hospital Blood Request Allocated',
+            $adminMsg,
+            'STOCK_REQUEST'
+        );
+
         $this->activityLogger->log(
             $adminId,
             $adminName,

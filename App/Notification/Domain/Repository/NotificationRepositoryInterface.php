@@ -9,6 +9,7 @@ interface NotificationRepositoryInterface
     public function markAsRead(int $notificationId): bool;
     public function markAllAsRead(int $userId): bool;
     public function getUnreadCount(int $userId): int;
+    public function deleteNotification(int $notificationId, int $userId): bool;
     public function getAdmins(): array;
 
     /**

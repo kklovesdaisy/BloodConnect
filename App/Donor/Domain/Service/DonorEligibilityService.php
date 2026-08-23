@@ -8,14 +8,15 @@ class DonorEligibilityService
     private int $maxAge = 65;
     private int $minWeight = 50;
 
-    public function evaluate(?string $dateOfBirth, ?string $weight): array
+    public function evaluate(?string $dateOfBirth, ?string $weight, ?bool $isPregnant = null): array
     {
         $reasons = [];
 
         $ageValid = $this->isAgeValid($dateOfBirth, $reasons);
         $weightValid = $this->isWeightValid($weight, $reasons);
+        $pregnancyValid = $isPregnant === null ? true : $this->isNotPregnant($isPregnant, $reasons);
 
-        $eligible = $ageValid && $weightValid;
+        $eligible = $ageValid && $weightValid && $pregnancyValid;
 
         return [
             'eligible' => $eligible,
@@ -24,6 +25,16 @@ class DonorEligibilityService
                 ? 'You meet all eligibility requirements.'
                 : 'You do not meet all eligibility requirements: ' . implode(', ', $reasons),
         ];
+    }
+
+    public function isNotPregnant(bool $isPregnant, array &$reasons = []): bool
+    {
+        if ($isPregnant) {
+            $reasons[] = 'Pregnant donors are not eligible to donate blood';
+            return false;
+        }
+
+        return true;
     }
 
     public function isAgeValid(?string $dateOfBirth, array &$reasons = []): bool

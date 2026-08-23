@@ -47,8 +47,8 @@ class DonorRepository implements DonorRepositoryInterface
 
     public function syncAvailabilityStatus(int $userId): array
     {
-                $stmt = $this->db->prepare("
-            SELECT u.available, u.next_available_date, d.date_of_birth, d.weight
+        $stmt = $this->db->prepare("
+            SELECT u.available, u.next_available_date, d.date_of_birth, d.weight, d.is_pregnant
             FROM users u
             LEFT JOIN donors d ON d.user_id = u.user_id
             WHERE u.user_id = ?
@@ -63,12 +63,15 @@ class DonorRepository implements DonorRepositoryInterface
             ];
         }
 
-        // Check age/weight eligibility
-        $profileEligible = true;
+        // Donor must meet ALL requirements to be available:
+        // age 18-65, weight >= 50kg, not pregnant. Missing DOB/weight
+        // means requirements cannot be verified -> unavailable.
+        $profileEligible = false;
         if (!empty($row['date_of_birth']) && !empty($row['weight'])) {
             $eligibility = $this->eligibilityService->evaluate(
                 (string)($row['date_of_birth'] ?? ''),
-                (string)($row['weight'] ?? '')
+                (string)($row['weight'] ?? ''),
+                (bool)($row['is_pregnant'] ?? 0)
             );
             $profileEligible = $eligibility['eligible'];
         }
@@ -208,6 +211,10 @@ class DonorRepository implements DonorRepositoryInterface
         if (isset($data['township'])) {
             $fields[] = 'township = ?';
             $params[] = $data['township'];
+        }
+        if (isset($data['is_pregnant'])) {
+            $fields[] = 'is_pregnant = ?';
+            $params[] = (int)(bool)$data['is_pregnant'];
         }
 
         if (empty($fields)) {

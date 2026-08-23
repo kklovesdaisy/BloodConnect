@@ -94,7 +94,7 @@
                     }
                     ?>
 
-                    <div class="notification-card opacity-0 animate-feed-reveal flex items-start justify-between gap-5 py-5 px-6 rounded-2xl border transition-all duration-300 cursor-pointer active:scale-[0.995] <?= $cardClass ?>"
+                    <div class="notification-card group opacity-0 animate-feed-reveal flex items-start justify-between gap-5 py-5 px-6 rounded-2xl border transition-all duration-300 cursor-pointer active:scale-[0.995] <?= $cardClass ?>"
                         style="animation-delay: <?= $index * 30 ?>ms"
                         data-id="<?= $notification['notification_id'] ?>">
                         <div class="flex items-start gap-5 flex-1 min-w-0">
@@ -117,9 +117,18 @@
                             <span class="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide whitespace-nowrap">
                                 <?= htmlspecialchars($notification['time_ago'] ?? ($notification['created_at'] ?? '')) ?>
                             </span>
-                            <span class="status-indicator w-2.5 h-2.5 rounded-full transition-all duration-300 shadow-sm mb-0.5
-                                <?= $isUnread ? 'bg-red-500 ring-4 ring-red-500/20' : 'bg-slate-300/70' ?>">
-                            </span>
+                            <div class="flex items-center gap-2 mt-1">
+                                <button class="delete-notif-btn p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all duration-200 opacity-0 group-hover:opacity-100"
+                                    onclick="event.stopPropagation(); deleteNotification(this, <?= (int)$notification['notification_id'] ?>)"
+                                    title="Delete notification">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                    </svg>
+                                </button>
+                                <span class="status-indicator w-2.5 h-2.5 rounded-full transition-all duration-300 shadow-sm mb-0.5
+                                    <?= $isUnread ? 'bg-red-500 ring-4 ring-red-500/20' : 'bg-slate-300/70' ?>">
+                                </span>
+                            </div>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -221,5 +230,28 @@
                 badge.style.display = "none";
             }
         });
+    }
+
+    async function deleteNotification(btn, id) {
+        try {
+            const response = await fetch("/BloodConnect/public/notification/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: "notification_id=" + encodeURIComponent(id)
+            });
+            const result = await response.json();
+            if (result.success) {
+                const card = btn.closest(".notification-card");
+                if (card) {
+                    card.style.transition = "opacity 0.3s, transform 0.3s";
+                    card.style.opacity = "0";
+                    card.style.transform = "translateX(20px) scale(0.97)";
+                    setTimeout(() => card.remove(), 300);
+                }
+                refreshBadges(result.count);
+            }
+        } catch (err) {
+            console.error(err);
+        }
     }
 </script>

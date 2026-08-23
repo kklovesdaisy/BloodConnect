@@ -402,6 +402,7 @@ class DonorController
 
         $history = $this->getDonationHistoryUseCase->execute((int)Session::get('user_id'));
         $completedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 9;
+        $acceptedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'ACCEPTED') ?? 8;
 
         $this->renderDonorView('donation_history', [
             'user' => Session::get('user'),
@@ -410,6 +411,7 @@ class DonorController
             'total_bags' => $history['total_bags'],
             'last_donation_date' => $history['last_donation_date'],
             'completed_status_id' => $completedStatus,
+            'accepted_status_id' => $acceptedStatus,
         ]);
     }
 
@@ -435,9 +437,12 @@ class DonorController
         $donorDetails = $this->donorRepo->getDonorDetails((int)Session::get('user_id'));
 
         $donation = $this->donationRepo->findByRequestId($requestId);
-        $completedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 9;
+        $eligibleStatuses = array_map('intval', array_filter(array_unique([
+            $this->masterRepo->getId('REQUEST_STATUS', 'ACCEPTED') ?? 8,
+            $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 9,
+        ])));
         $donationId = 0;
-        if (!empty($donation) && (int)($donation['status'] ?? 0) === $completedStatus) {
+        if (!empty($donation) && in_array((int)($donation['status'] ?? 0), $eligibleStatuses, true)) {
             $donationId = (int)($donation['donation_id'] ?? 0);
         }
 
@@ -460,8 +465,11 @@ class DonorController
             exit;
         }
 
-        $completedStatus = $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 11;
-        $donation = $this->donationRepo->findDonationForCertificate($donationId, $this->getUserId(), $completedStatus);
+        $statuses = array_filter(array_unique([
+            $this->masterRepo->getId('REQUEST_STATUS', 'ACCEPTED') ?? 8,
+            $this->masterRepo->getId('REQUEST_STATUS', 'COMPLETED') ?? 9,
+        ]));
+        $donation = $this->donationRepo->findDonationForCertificate($donationId, $this->getUserId(), $statuses);
 
         if (empty($donation)) {
             Session::set('flash_message', 'No completed donation record found for this request.');
@@ -589,7 +597,8 @@ class DonorController
         if ($donorDetails && !empty($donorDetails['date_of_birth']) && !empty($donorDetails['weight'])) {
             $eligibility = $this->donorEligibilityService->evaluate(
                 $donorDetails['date_of_birth'],
-                $donorDetails['weight']
+                $donorDetails['weight'],
+                (bool)($donorDetails['is_pregnant'] ?? 0)
             );
         }
 
@@ -689,6 +698,14 @@ class DonorController
         }
         if (isset($_POST['township']) && $_POST['township'] !== '') {
             $donorSaveData['township'] = trim($_POST['township']);
+        }
+        $pregnancyStatus = strtolower(trim((string)($_POST['pregnancy_status'] ?? '')));
+        if ($pregnancyStatus === 'pregnant') {
+            $donorSaveData['is_pregnant'] = 1;
+        } elseif ($pregnancyStatus === 'not_pregnant') {
+            $donorSaveData['is_pregnant'] = 0;
+        } else {
+            die('Please select Pregnant or Not Pregnant before saving.');
         }
         if (!empty($donorSaveData)) {
             $this->donorRepo->saveDonorDetails($userId, $donorSaveData);

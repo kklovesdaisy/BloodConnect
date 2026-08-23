@@ -31,7 +31,7 @@
                 <!-- Left Grid: Copy -->
                 <div class="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left space-y-6">
                     <span class="inline-flex items-center gap-2 bg-red-50 text-red-600 border border-red-100 px-4 py-1.5 rounded-full text-sm font-bold tracking-wide uppercase shadow-sm">
-                        <i class="fa-solid fa-code"></i> BloodConnect API
+                        <i class="fa-solid fa-droplet"></i> BloodConnect
                     </span>
 
                     <h1 class="font-black text-4xl md:text-6xl text-gray-900 tracking-tight leading-tight">
@@ -45,28 +45,84 @@
 
                 </div>
 
-                <!-- Right Grid: Code Editor Mockup -->
+                <!-- Right Grid: Live Donor Matching Card -->
                 <div class="lg:col-span-5 relative flex justify-center w-full">
-                    <div class="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-2xl shadow-red-100/60 overflow-hidden">
-                        <!-- Window Chrome -->
-                        <div class="flex items-center gap-2 bg-gray-100 border-b border-gray-200 px-4 py-3">
-                            <span class="w-3 h-3 rounded-full bg-red-400"></span>
-                            <span class="w-3 h-3 rounded-full bg-amber-400"></span>
-                            <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
-                            <span class="ml-3 text-xs font-semibold text-gray-500 font-mono">BloodRequestController.php</span>
+                    <div class="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-2xl shadow-red-100/60 overflow-hidden bc-card-glow">
+
+                        <!-- Card Header -->
+                        <div class="flex items-center justify-between bg-red-600 px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <span class="relative flex h-2.5 w-2.5">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-60"></span>
+                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                                </span>
+                                <span class="text-xs font-bold text-white tracking-wide">LIVE DONOR MATCHING</span>
+                            </div>
+                            <span class="text-[10px] font-bold text-red-100 bg-red-500/50 rounded-full px-2 py-0.5">Auto</span>
                         </div>
-                        <!-- Code Body -->
-                        <div class="bg-gray-50 p-5 font-mono text-[13px] leading-[1.9] text-left overflow-x-auto">
-                            <pre class="m-0 whitespace-pre text-gray-800"><span class="bc-line" style="animation-delay:.3s"><span class="text-purple-600">class</span> <span class="text-red-600">BloodRequestController</span> {
-</span><span class="bc-line" style="animation-delay:.9s">    <span class="text-purple-600">public function</span> matchDonor() {
-</span><span class="bc-line" style="animation-delay:1.5s">        $donor = <span class="text-sky-600">$this-&gt;findNearest</span>(
-</span><span class="bc-line" style="animation-delay:2.1s">            blood: <span class="text-emerald-700">'O+'</span>,
-</span><span class="bc-line" style="animation-delay:2.7s">            radius: <span class="text-sky-700">'5km'</span>
-</span><span class="bc-line" style="animation-delay:3.3s">        );
-</span><span class="bc-line" style="animation-delay:3.9s">        <span class="text-gray-400">// Donor found!</span>
-</span><span class="bc-line" style="animation-delay:4.5s">        <span class="text-purple-600">return</span> $donor;  <span class="text-gray-400">// ~12 min</span>
-</span><span class="bc-line" style="animation-delay:5.1s">    }
-</span><span class="bc-line" style="animation-delay:5.7s">}<span class="bc-cursor">|</span></span></pre>
+
+                        <!-- Body -->
+                        <div class="p-5">
+
+                            <!-- Request needing blood -->
+                            <div class="rounded-xl border border-red-100 bg-red-50/60 p-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-red-400">Patient needs</span>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="w-9 h-9 rounded-lg bg-red-600 text-white font-black text-sm flex items-center justify-center">A+</span>
+                                            <span class="text-sm font-extrabold text-gray-800">2 units urgently</span>
+                                        </div>
+                                    </div>
+                                    <span class="inline-flex items-center gap-1.5 text-[10px] font-bold text-red-600 bg-white border border-red-200 rounded-full px-2.5 py-1">
+                                        <i class="fa-solid fa-location-dot"></i> 2.1 km
+                                    </span>
+                                </div>
+                                <p class="mt-2.5 text-xs font-medium text-gray-500 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-hospital text-red-300"></i> Yamethin Hospital, Mandalay
+                                </p>
+                            </div>
+
+                            <!-- Divider -->
+                            <div class="flex items-center gap-2 my-4 px-1">
+                                <span class="flex-1 h-px bg-gray-200"></span>
+                                <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Matched Donors</span>
+                                <span class="flex-1 h-px bg-gray-200"></span>
+                            </div>
+
+                            <!-- Matched donor rows -->
+                            <div class="space-y-2.5">
+                                <?php
+                                $matchDonors = [
+                                    ['initials' => 'J', 'name' => 'Judy',  'group' => 'A+', 'dist' => '1.2 km'],
+                                    ['initials' => 'N', 'name' => 'Nick',  'group' => 'O+', 'dist' => '2.1 km'],
+                                    ['initials' => 'K', 'name' => 'Kaung', 'group' => 'A+', 'dist' => '3.8 km'],
+                                ];
+                                ?>
+                                <?php foreach ($matchDonors as $md): ?>
+                                <div class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-xs">
+                                    <div class="relative">
+                                        <div class="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 text-gray-600 font-bold text-xs flex items-center justify-center"><?= $md['initials'] ?></div>
+                                        <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white"></span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-bold text-gray-800 truncate"><?= $md['name'] ?></p>
+                                        <p class="text-[11px] text-gray-400 font-medium"><i class="fa-solid fa-location-dot mr-0.5"></i> <?= $md['dist'] ?> away</p>
+                                    </div>
+                                    <span class="text-[11px] font-black text-white bg-red-600 rounded-md px-2 py-1"><?= $md['group'] ?></span>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <!-- Summary + CTA -->
+                            <div class="mt-4 flex items-center justify-between gap-3">
+                                <p class="text-xs text-gray-500 font-semibold">
+                                    <span class="text-red-600 font-black">3</span> compatible donors
+                                </p>
+                                <a href="/BloodConnect/public/register" class="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-red-700 transition-all active:scale-95 shadow-sm">
+                                    <i class="fa-solid fa-heart-pulse"></i> Request Blood
+                                </a>
+                            </div>
                         </div>
                     </div>
 
@@ -97,24 +153,18 @@
                 0% { transform: translateX(0); }
                 100% { transform: translateX(-50%); }
             }
-            .bc-line {
-                display: inline;
-                opacity: 0;
-                animation: bc-line-in .5s ease-out forwards;
+            .bc-card-glow {
+                animation: bc-card-glow 3s ease-in-out infinite;
             }
-            @keyframes bc-line-in {
-                from { opacity: 0; transform: translateY(6px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            .bc-cursor {
-                display: inline-block;
-                color: #dc2626;
-                font-weight: bold;
-                animation: bc-blink 1s steps(2) infinite;
-            }
-            @keyframes bc-blink {
-                0%, 50% { opacity: 1; }
-                51%, 100% { opacity: 0; }
+            @keyframes bc-card-glow {
+                0%, 100% {
+                    box-shadow: 0 20px 45px -15px rgba(220, 38, 38, 0.25);
+                    transform: translateY(0);
+                }
+                50% {
+                    box-shadow: 0 25px 60px -12px rgba(220, 38, 38, 0.55);
+                    transform: translateY(-4px);
+                }
             }
             .bc-badge-glow {
                 animation: bc-glow 2.2s ease-in-out infinite;

@@ -20,6 +20,13 @@ function activeLink($url, $currentPath)
         ? 'text-red-600 border-b-2 border-red-600 pb-1 lg:pb-1 font-bold'
         : 'text-gray-700 hover:text-red-600 transition font-semibold';
 }
+
+// On the home page the logo doubles as the discreet entry to the admin
+// console login; everywhere else it navigates back home.
+$homeBase = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
+$homeCleanPath = '/' . trim(str_replace($homeBase, '', $currentPath), '/');
+$isHomePage = ($homeCleanPath === '/' || $homeCleanPath === '');
+$logoHref = $basePath . ($isHomePage ? '/admin/login' : '/');
 ?>
 
 <script src="https://cdn.tailwindcss.com"></script>
@@ -32,7 +39,7 @@ function activeLink($url, $currentPath)
         <div class="h-24 flex items-center justify-between"> <!-- Increased header height to h-24 to fit larger text comfortably -->
 
             <!-- Logo (Maximized Size) -->
-            <a href="<?= $basePath ?>/" class="flex items-center gap-3 z-50">
+            <a href="<?= $logoHref ?>" class="flex items-center gap-3 z-50" <?= $isHomePage ? 'title="Administrator Console"' : '' ?>>
                 <div class="text-red-600 text-5xl"> <!-- Scaled up to 5xl -->
                     <i class="fa-solid fa-droplet"></i>
                 </div>

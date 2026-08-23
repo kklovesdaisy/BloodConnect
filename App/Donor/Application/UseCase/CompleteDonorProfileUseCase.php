@@ -18,18 +18,14 @@ class CompleteDonorProfileUseCase
     {
         $errors = [];
 
-        $dateOfBirth = trim($data['date_of_birth'] ?? '');
-        $weight = trim($data['weight'] ?? '');
+        $ageRaw = trim((string)($data['age'] ?? ''));
+        $weight = trim((string)($data['weight'] ?? ''));
+        $pregnancyStatus = strtolower(trim((string)($data['pregnancy_status'] ?? '')));
 
-        if ($dateOfBirth === '') {
-            $errors['date_of_birth'] = 'Date of birth is required.';
-        } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateOfBirth)) {
-            $errors['date_of_birth'] = 'Date of birth must be in YYYY-MM-DD format.';
-        } else {
-            $dob = \DateTime::createFromFormat('Y-m-d', $dateOfBirth);
-            if (!$dob || $dob > new \DateTime()) {
-                $errors['date_of_birth'] = 'Please enter a valid date of birth.';
-            }
+        if ($ageRaw === '') {
+            $errors['age'] = 'Age is required.';
+        } elseif (!ctype_digit($ageRaw) || (int)$ageRaw < 1 || (int)$ageRaw > 120) {
+            $errors['age'] = 'Please enter a valid age between 1 and 120.';
         }
 
         if ($weight === '') {
@@ -38,20 +34,30 @@ class CompleteDonorProfileUseCase
             $errors['weight'] = 'Please enter a valid weight.';
         }
 
+        $isPregnant = null;
+        if ($pregnancyStatus === 'pregnant') {
+            $isPregnant = true;
+        } elseif ($pregnancyStatus === 'not_pregnant') {
+            $isPregnant = false;
+        } else {
+            $errors['pregnancy_status'] = 'Please select Pregnant or Not Pregnant before saving.';
+        }
+
         if (!empty($errors)) {
             return ['success' => false, 'errors' => $errors];
         }
 
-        $donorDetails = $this->donorRepo->getDonorDetails($userId);
-        $hasExistingDob = $donorDetails && !empty($donorDetails['date_of_birth']);
+        // Derive date of birth from the entered age (self-reported screening data).
+        $dateOfBirth = date('Y-m-d', strtotime('-' . (int)$ageRaw . ' years'));
 
-        $saveData = ['weight' => $weight];
-        if (!$hasExistingDob) {
-            $saveData['date_of_birth'] = $dateOfBirth;
-        }
+        $saveData = [
+            'weight' => $weight,
+            'date_of_birth' => $dateOfBirth,
+            'is_pregnant' => $isPregnant,
+        ];
 
-        $stateRegion = trim($data['state_region'] ?? '');
-        $township = trim($data['township'] ?? '');
+        $stateRegion = trim((string)($data['state_region'] ?? ''));
+        $township = trim((string)($data['township'] ?? ''));
         if ($stateRegion !== '') {
             $saveData['state_region'] = $stateRegion;
         }
@@ -64,14 +70,22 @@ class CompleteDonorProfileUseCase
             return ['success' => false, 'errors' => ['form' => 'Failed to save donor profile.']];
         }
 
-        $finalDob = $hasExistingDob ? $donorDetails['date_of_birth'] : $dateOfBirth;
-        $eligibility = $this->eligibilityService->evaluate($finalDob, $weight);
+        // Re-evaluate availability immediately: donors who fail the
+        // eligibility requirements (age 18-65, weight >= 50kg, not pregnant)
+        // must be marked unavailable right away.
+        $this->donorRepo->syncAvailabilityStatus($userId);
+
+        $eligibility = $this->eligibilityService->evaluate(
+            $dateOfBirth,
+            $weight,
+            $isPregnant
+        );
 
         $this->activityLogger->log(
             $userId,
             $username,
             'DONOR_PROFILE_COMPLETED',
-            "Donor profile completed (DOB: {$finalDob}, Weight: {$weight}kg)"
+            "Donor profile completed (Age: {$ageRaw}, Weight: {$weight}kg, Pregnant: " . ($isPregnant ? 'yes' : 'no') . ")"
         );
 
         return [

@@ -39,6 +39,11 @@ class AuthController
         View::render('Authentication', 'login');
     }
 
+    public function showAdminLogin()
+    {
+        View::render('Authentication', 'admin_login');
+    }
+
     public function showForgotPassword()
     {
         Session::start();
@@ -259,12 +264,17 @@ class AuthController
     {
         Session::start();
 
+        // The admin login page posts with context=admin so failures are
+        // redirected back to it; the regular login keeps using /login.
+        $isAdminLogin = ($_POST['context'] ?? '') === 'admin';
+        $loginPage = $isAdminLogin ? '/admin/login' : '/login';
+
         if (!$this->verifyCaptcha()) {
             $this->setFlash(
                 ['form' => 'Please complete the verification.'],
                 ['login' => $_POST['login'] ?? '']
             );
-            $this->redirect('/login');
+            $this->redirect($loginPage);
         }
 
         try {
@@ -283,7 +293,7 @@ class AuthController
                     ]
                 );
 
-                $this->redirect('/login');
+                $this->redirect($loginPage);
             }
 
             $user = $result['user'];
@@ -296,7 +306,7 @@ class AuthController
                     ['form' => 'Your account has been disabled.'],
                     ['login' => $data['login'] ?? '']
                 );
-                $this->redirect('/login');
+                $this->redirect($loginPage);
             }
 
             // ==============================
@@ -315,7 +325,7 @@ class AuthController
                     ['login' => $data['login'] ?? '']
                 );
 
-                $this->redirect('/login');
+                $this->redirect($loginPage);
             }
 
             // ==========================
@@ -372,7 +382,7 @@ class AuthController
                         'form' => 'Unknown user type.'
                     ]);
 
-                    $this->redirect('/login');
+                    $this->redirect($loginPage);
             }
         } catch (\DomainException $e) {
 
@@ -381,7 +391,7 @@ class AuthController
                 ['login' => $_POST['login'] ?? '']
             );
 
-            $this->redirect('/login');
+            $this->redirect($loginPage);
         } catch (\Exception $e) {
 
             $this->setFlash(
@@ -389,7 +399,7 @@ class AuthController
                 ['login' => $_POST['login'] ?? '']
             );
 
-            $this->redirect('/login');
+            $this->redirect($loginPage);
         }
     }
 
