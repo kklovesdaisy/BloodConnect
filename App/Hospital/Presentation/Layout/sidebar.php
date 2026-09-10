@@ -77,11 +77,6 @@ $pendingRequestsCount = $pending_count;
                         </svg>
                         My Requests
                     </div>
-                    <?php if ($pendingRequestsCount > 0): ?>
-                        <span class="pending-badge w-5 h-5 rounded-full bg-[#ce2424] text-white text-[10px] font-black flex items-center justify-center"><?= $pendingRequestsCount ?></span>
-                    <?php else: ?>
-                        <span class="pending-badge w-5 h-5 rounded-full bg-[#ce2424] text-white text-[10px] font-black hidden"></span>
-                    <?php endif; ?>
                 </a>
             <?php endif; ?>
 
